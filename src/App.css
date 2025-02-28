@@ -1,0 +1,135 @@
+/* ===== Global Styles ===== */
+body, html {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  font-family: "Arial", sans-serif;
+  background-color: #f8f9fa; /* Light Gray Background */
+}
+
+/* ===== Content Wrapper (Ensures Footer Stays at Bottom) ===== */
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.container {
+  padding-top: 20px; /* Reduced padding since we have padding in the content wrapper */
+}
+
+/* ===== Navbar Styles (Compact & Modern) ===== */
+.small-navbar {
+  padding: 5px 0; /* Reduce padding */
+  min-height: 40px; /* Smaller navbar height */
+  background: #343a40; /* Dark Gray Background */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Add subtle shadow */
+}
+
+.small-brand {
+  font-size: 1.1rem; /* Smaller brand font */
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+
+.small-nav-links .nav-link {
+  font-size: 0.85rem; /* Smaller nav link text */
+  padding: 3px 8px;
+  transition: color 0.3s ease-in-out;
+  margin: 0 2px;
+}
+
+.small-nav-links .nav-link:hover {
+  color: #ffdd57; /* Yellow highlight on hover */
+}
+
+/* ===== Footer Styles (Fixed at Bottom) ===== */
+footer {
+  text-align: center;
+  padding: 10px 0; /* Reduced padding */
+  background: #222;
+  color: white;
+  margin-top: auto;
+  height: auto; /* Ensure the footer height is auto */
+  line-height: 1.2; /* Reduce line height for compactness */
+}
+
+footer p {
+  margin: 0;
+}
+
+footer a {
+  text-decoration: none;
+}
+
+footer a:hover {
+  text-decoration: underline;
+}
+
+/* Additional Utility Classes */
+.extra-small {
+  font-size: 0.75rem; /* Smaller font size */
+}
+
+.tiny {
+  font-size: 0.65rem; /* Even smaller font size */
+}
+
+/* ===== Button Styling (Consistent Theme) ===== */
+.btn-primary {
+  background-color: #007bff;
+  border: none;
+  padding: 10px 16px;
+  font-size: 1rem;
+  transition: background 0.3s ease-in-out;
+}
+
+.btn-primary:hover {
+  background-color: #0056b3; /* Darker blue on hover */
+}
+
+.btn-outline-primary {
+  border-color: #007bff;
+  color: #007bff;
+  transition: all 0.3s ease-in-out;
+}
+
+.btn-outline-primary:hover {
+  background-color: #007bff;
+  color: white;
+}
+
+/* Card styling enhancements */
+.card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(0,0,0,0.1);
+  height: 100%;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+/* Page transitions */
+.fade-enter {
+  opacity: 0;
+}
+
+.fade-enter-active {
+  opacity: 1;
+  transition: opacity 300ms;
+}
+
+.fade-exit {
+  opacity: 1;
+}
+
+.fade-exit-active {
+  opacity: 0;
+  transition: opacity 300ms;
+}

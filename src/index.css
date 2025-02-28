@@ -1,0 +1,95 @@
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+  background-color: #f8f9fa; /* Light gray background */
+}
+
+/* ✅ Ensure Navbar is fixed at the top */
+.navbar {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 1000;
+}
+
+/* ✅ Push content below fixed Navbar */
+.content {
+  padding-top: 60px; /* Adjust padding to accommodate fixed navbar */
+  padding-bottom: 20px; /* Space before footer */
+  min-height: 80vh; /* Ensures page content fills screen */
+}
+
+/* Navbar size adjustments */
+.small-navbar {
+  padding: 3px 0 !important; /* Reduced padding */
+  min-height: 40px !important; /* Smaller navbar height */
+}
+
+.small-brand {
+  font-size: 1.1rem !important; /* Smaller brand font */
+}
+
+.small-nav-links .nav-link {
+  font-size: 0.85rem !important; /* Smaller nav link text */
+  padding: 3px 8px !important; /* Reduced padding */
+}
+
+/* ✅ Footer stays at bottom */
+.footer {
+  position: relative;
+  bottom: 0;
+  width: 100%;
+  background-color: #343a40;
+  color: white;
+  text-align: center;
+  padding: 10px 0;
+}
+
+/* Footer size adjustments */
+.footer-compact {
+  font-size: 0.9rem; /* Smaller text in footer */
+}
+
+.footer-compact h6 {
+  font-size: 1rem; /* Smaller headings */
+  margin-bottom: 0.25rem;
+}
+
+.footer-compact ul {
+  margin-bottom: 0;
+}
+
+.footer-compact .row {
+  margin-bottom: 0.5rem;
+}
+
+/* Additional Utility Classes */
+.text-primary {
+  color: #007bff !important;
+}
+
+.bg-primary-light {
+  background-color: #e6f2ff;
+}
+
+.section-padding {
+  padding: 60px 0;
+}
+
+.rounded-custom {
+  border-radius: 12px;
+}
+
+.shadow-custom {
+  box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+}
+
+/* Animation utilities */
+.animate-hover {
+  transition: all 0.3s ease;
+}
+
+.animate-hover:hover {
+  transform: translateY(-5px);
+}

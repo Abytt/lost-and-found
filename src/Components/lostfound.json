@@ -1,0 +1,19 @@
+[
+    {
+      "id": 1,
+      "type": "Lost",
+      "document": "Aadhaar Card",
+      "name": "John Doe",
+      "location": "New Delhi",
+      "contact": "johndoe@example.com"
+    },
+    {
+      "id": 2,
+      "type": "Found",
+      "document": "PAN Card",
+      "name": "Jane Smith",
+      "location": "Mumbai",
+      "contact": "janesmith@example.com"
+    }
+  ]
+  

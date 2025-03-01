@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from "react";
-import { getDatabase, ref, push, onValue } from "firebase/database";
-import { app } from "../firebase";
+import { useState, useEffect } from "react";
+import { getDatabase, ref, onValue } from "firebase/database";
+import { app } from "../firebase"; // Correct the import path
 
 const database = getDatabase(app);
 
 function LostFound() {
   const [entries, setEntries] = useState([]);
-  const [form, setForm] = useState({ type: "Lost", document: "", name: "", location: "", contact: "" });
+  const [selectedEntry, setSelectedEntry] = useState(null);
 
   useEffect(() => {
-    const entriesRef = ref(database, 'entries');
+    const entriesRef = ref(database, "entries");
     onValue(entriesRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
@@ -19,93 +19,168 @@ function LostFound() {
     });
   }, []);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
+  const handleViewDetails = (entry) => {
+    setSelectedEntry(entry);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const newEntry = { ...form, id: Date.now() };
-    try {
-      await push(ref(database, 'entries'), newEntry);
-      console.log("Entry added successfully:", newEntry);
-      setForm({ type: "Lost", document: "", name: "", location: "", contact: "" });
-    } catch (error) {
-      console.error("Error adding entry:", error);
-    }
+  const handleCloseDetails = () => {
+    setSelectedEntry(null);
+  };
+
+  const containerStyle = {
+    maxWidth: "900px",
+    margin: "auto",
+    padding: "20px",
+    fontFamily: "'Arial', sans-serif",
+  };
+
+  const headerStyle = {
+    textAlign: "center",
+    color: "#333",
+    marginBottom: "20px",
+  };
+
+  const flexContainer = {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: "20px",
+  };
+
+  const columnStyle = {
+    flex: 1,
+    background: "#fff",
+    padding: "15px",
+    borderRadius: "8px",
+    boxShadow: "0px 2px 5px rgba(0, 0, 0, 0.1)",
+  };
+
+  const tableStyle = {
+    width: "100%",
+    borderCollapse: "collapse",
+  };
+
+  const thTdStyle = {
+    border: "1px solid #ddd",
+    padding: "8px",
+    textAlign: "left",
+  };
+
+  const thStyle = {
+    background: "#f4f4f4",
+    fontWeight: "bold",
   };
 
   return (
-    <div className="container mt-4">
-      <h1 className="text-center">Lost & Found</h1>
-      <div className="row">
-        <div className="col-md-6">
-          <div className="card shadow mb-4">
-            <div className="card-header bg-primary text-white text-center py-3">
-              <h3 className="mb-0">Add New Entry</h3>
-            </div>
-            <div className="card-body">
-              <form onSubmit={handleSubmit}>
-                <div className="mb-3">
-                  <label className="form-label fw-bold">Type</label>
-                  <select className="form-select" name="type" value={form.type} onChange={handleChange} required>
-                    <option value="Lost">Lost</option>
-                    <option value="Found">Found</option>
-                  </select>
-                </div>
-                <div className="mb-3">
-                  <label className="form-label fw-bold">Document</label>
-                  <input type="text" className="form-control" name="document" value={form.document} onChange={handleChange} placeholder="Document type" required />
-                </div>
-                <div className="mb-3">
-                  <label className="form-label fw-bold">Name</label>
-                  <input type="text" className="form-control" name="name" value={form.name} onChange={handleChange} placeholder="Full name as shown on document" required />
-                </div>
-                <div className="mb-3">
-                  <label className="form-label fw-bold">Location</label>
-                  <input type="text" className="form-control" name="location" value={form.location} onChange={handleChange} placeholder="e.g., Park, Office, Mall" required />
-                </div>
-                <div className="mb-3">
-                  <label className="form-label fw-bold">Contact</label>
-                  <input type="tel" className="form-control" name="contact" value={form.contact} onChange={handleChange} placeholder="Your phone number" required />
-                </div>
-                <button type="submit" className="btn btn-primary w-100">Add Entry</button>
-              </form>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-6">
-          <div className="card shadow mb-4">
-            <div className="card-header bg-info text-white text-center py-3">
-              <h3 className="mb-0">Recent Entries</h3>
-            </div>
-            <div className="card-body">
-              {entries.length > 0 ? (
-                <ul className="list-group">
-                  {entries.map((entry) => (
-                    <li key={entry.id} className="list-group-item">
-                      <div className="d-flex justify-content-between align-items-center mb-2">
-                        <h5 className="mb-0">
-                          <span className={`badge bg-${entry.type === "Lost" ? "danger" : "success"} me-2`}>{entry.type}</span>
-                          {entry.document}
-                        </h5>
-                        <span className="text-muted small">{new Date(entry.id).toLocaleDateString()}</span>
-                      </div>
-                      <p className="mb-2"><strong>Name:</strong> {entry.name}</p>
-                      <p className="mb-2"><strong>Location:</strong> {entry.location}</p>
-                      <p className="mb-2"><strong>Contact:</strong> {entry.contact}</p>
-                      <button className="btn btn-sm btn-outline-primary">View Details</button>
-                    </li>
+    <div style={containerStyle}>
+      <h1 style={headerStyle}>Lost & Found</h1>
+
+      <div style={flexContainer}>
+        {/* Lost Items (Left Side) */}
+        <div style={columnStyle}>
+          <h2 style={{ color: "#d9534f" }}>Lost Items</h2>
+          {entries.filter((entry) => entry.type === "Lost").length > 0 ? (
+            <table style={tableStyle}>
+              <thead>
+                <tr>
+                  <th style={{ ...thTdStyle, ...thStyle }}>Document</th>
+                  <th style={{ ...thTdStyle, ...thStyle }}>Name</th>
+                  <th style={{ ...thTdStyle, ...thStyle }}>Location</th>
+                  <th style={{ ...thTdStyle, ...thStyle }}>Contact</th>
+                  <th style={{ ...thTdStyle, ...thStyle }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {entries
+                  .filter((entry) => entry.type === "Lost")
+                  .map((entry) => (
+                    <tr key={entry.id}>
+                      <td style={thTdStyle}>{entry.document}</td>
+                      <td style={thTdStyle}>{entry.name}</td>
+                      <td style={thTdStyle}>{entry.location}</td>
+                      <td style={thTdStyle}>{entry.contact}</td>
+                      <td style={thTdStyle}>
+                        <button
+                          style={{ background: "#007bff", color: "white", padding: "5px", borderRadius: "5px", border: "none", cursor: "pointer" }}
+                          onClick={() => handleViewDetails(entry)}
+                        >
+                          More Details
+                        </button>
+                      </td>
+                    </tr>
                   ))}
-                </ul>
-              ) : (
-                <p>No entries found.</p>
-              )}
-            </div>
-          </div>
+              </tbody>
+            </table>
+          ) : (
+            <p>No lost items found.</p>
+          )}
+        </div>
+
+        {/* Found Items (Right Side) */}
+        <div style={columnStyle}>
+          <h2 style={{ color: "#5cb85c" }}>Found Items</h2>
+          {entries.filter((entry) => entry.type === "Found").length > 0 ? (
+            <table style={tableStyle}>
+              <thead>
+                <tr>
+                  <th style={{ ...thTdStyle, ...thStyle }}>Document</th>
+                  <th style={{ ...thTdStyle, ...thStyle }}>Name</th>
+                  <th style={{ ...thTdStyle, ...thStyle }}>Location</th>
+                  <th style={{ ...thTdStyle, ...thStyle }}>Contact</th>
+                  <th style={{ ...thTdStyle, ...thStyle }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {entries
+                  .filter((entry) => entry.type === "Found")
+                  .map((entry) => (
+                    <tr key={entry.id}>
+                      <td style={thTdStyle}>{entry.document}</td>
+                      <td style={thTdStyle}>{entry.name}</td>
+                      <td style={thTdStyle}>{entry.location}</td>
+                      <td style={thTdStyle}>{entry.contact}</td>
+                      <td style={thTdStyle}>
+                        <button
+                          style={{ background: "#007bff", color: "white", padding: "5px", borderRadius: "5px", border: "none", cursor: "pointer" }}
+                          onClick={() => handleViewDetails(entry)}
+                        >
+                          More Details
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          ) : (
+            <p>No found items available.</p>
+          )}
         </div>
       </div>
+
+      {/* Detailed View Modal */}
+      {selectedEntry && (
+        <div className="modal fade show" style={{ display: 'block' }}>
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Entry Details</h5>
+                <button type="button" className="btn-close" onClick={handleCloseDetails}></button>
+              </div>
+              <div className="modal-body">
+                <p><strong>Document:</strong> {selectedEntry.document}</p>
+                <p><strong>Name:</strong> {selectedEntry.name}</p>
+                <p><strong>Location:</strong> {selectedEntry.location}</p>
+                <p><strong>Type:</strong> {selectedEntry.type}</p>
+                <p><strong>Contact:</strong> {selectedEntry.contact}</p>
+                <p><strong>Date:</strong> {new Date(selectedEntry.id).toLocaleDateString()}</p>
+                {/* Add more details as needed */}
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={handleCloseDetails}>Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

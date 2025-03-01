@@ -1,4 +1,3 @@
-import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Home from "./components/Home";
@@ -8,8 +7,7 @@ import Search from "./Components/Search";
 import About from "./Components/About";
 import Contact from "./components/Contact";
 import LostFound from "./Components/LostFound";
-import Footer from "./Components/Footer";
-import "./App.css";
+import BloodDonor from "./Components/BloodDonor"; // Correct the import path
 
 function App() {
   return (
@@ -24,9 +22,9 @@ function App() {
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/lost-found" element={<LostFound />} />
+          <Route path="/blood-donor" element={<BloodDonor />} /> {/* Add the route for Blood Donor Helper */}
         </Routes>
       </div>
-      <Footer />
     </Router>
   );
 }

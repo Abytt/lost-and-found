@@ -9,6 +9,7 @@ function Search() {
   const [searchTerm, setSearchTerm] = useState("");
   const [entries, setEntries] = useState([]);
   const [filteredEntries, setFilteredEntries] = useState([]);
+  const [selectedEntry, setSelectedEntry] = useState(null);
 
   useEffect(() => {
     const entriesRef = ref(database, 'entries');
@@ -36,6 +37,14 @@ function Search() {
       );
     }
     setFilteredEntries(filtered);
+  };
+
+  const handleViewDetails = (entry) => {
+    setSelectedEntry(entry);
+  };
+
+  const handleCloseDetails = () => {
+    setSelectedEntry(null);
   };
 
   return (
@@ -106,7 +115,7 @@ function Search() {
                           <span className="text-muted small">{new Date(entry.id).toLocaleDateString()}</span>
                         </div>
                         <p className="mb-2"><strong>Location:</strong> {entry.location}</p>
-                        <button className="btn btn-sm btn-outline-primary">
+                        <button className="btn btn-sm btn-outline-primary" onClick={() => handleViewDetails(entry)}>
                           View Details
                         </button>
                       </li>
@@ -120,6 +129,31 @@ function Search() {
           </div>
         </div>
       </div>
+
+      {/* Detailed View Modal */}
+      {selectedEntry && (
+        <div className="modal fade show" style={{ display: 'block' }}>
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Entry Details</h5>
+                <button type="button" className="btn-close" onClick={handleCloseDetails}></button>
+              </div>
+              <div className="modal-body">
+                <p><strong>Document:</strong> {selectedEntry.document}</p>
+                <p><strong>Name:</strong> {selectedEntry.name}</p>
+                <p><strong>Location:</strong> {selectedEntry.location}</p>
+                <p><strong>Type:</strong> {selectedEntry.type}</p>
+                <p><strong>Date:</strong> {new Date(selectedEntry.id).toLocaleDateString()}</p>
+                {/* Add more details as needed */}
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={handleCloseDetails}>Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

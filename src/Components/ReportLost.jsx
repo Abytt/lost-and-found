@@ -6,6 +6,7 @@ const database = getDatabase(app);
 
 function ReportLost() {
   const [form, setForm] = useState({ type: "Lost", document: "", name: "", location: "", contact: "", dateLost: "", additionalDetails: "" });
+  const [successMessage, setSuccessMessage] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -19,9 +20,11 @@ function ReportLost() {
     try {
       await push(ref(database, 'entries'), newEntry);
       console.log("Entry added successfully:", newEntry);
+      setSuccessMessage("Your report has been submitted successfully!");
       setForm({ type: "Lost", document: "", name: "", location: "", contact: "", dateLost: "", additionalDetails: "" });
     } catch (error) {
       console.error("Error adding entry:", error);
+      setSuccessMessage("There was an error submitting your report. Please try again.");
     }
   };
 
@@ -91,6 +94,11 @@ function ReportLost() {
                   <i className="bi bi-cloud-upload me-2"></i>Submit Report
                 </button>
               </form>
+              {successMessage && (
+                <div className="alert alert-success mt-3">
+                  {successMessage}
+                </div>
+              )}
             </div>
           </div>
         </div>

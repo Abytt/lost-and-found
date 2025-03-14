@@ -5,23 +5,88 @@ import { app } from "../firebase";
 const database = getDatabase(app);
 
 function ReportFound() {
-  const [form, setForm] = useState({ type: "Found", document: "", name: "", location: "", contact: "", dateFound: "", description: "", currentLocation: "" });
+  const [form, setForm] = useState({ 
+    type: "Found", 
+    document: "", 
+    name: "", 
+    location: "", 
+    contact: "", 
+    dateFound: "", 
+    description: "", 
+    currentLocation: "",
+    email: "",
+    lat: null,
+    lon: null,
+    category: "" // Adding category field for better matching
+  });
   const [successMessage, setSuccessMessage] = useState("");
+  const [locationLoading, setLocationLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
+    
+    // Set category based on document type for better matching
+    if (name === "document") {
+      setForm(prev => ({
+        ...prev,
+        [name]: value,
+        category: value // Use document type as category
+      }));
+    }
+  };
+
+  const getLocation = () => {
+    if (navigator.geolocation) {
+      setLocationLoading(true);
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setForm({
+            ...form,
+            lat: position.coords.latitude,
+            lon: position.coords.longitude
+          });
+          setLocationLoading(false);
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          setLocationLoading(false);
+          alert("Unable to get your location. Please enter the location manually.");
+        }
+      );
+    } else {
+      alert("Geolocation is not supported by this browser.");
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const newEntry = { ...form, id: Date.now() };
+    const newEntry = { 
+      ...form, 
+      id: Date.now(),
+      timestamp: new Date().toISOString()
+    };
+    
     console.log("Form Data:", newEntry); // Log form data
+    
     try {
       await push(ref(database, 'entries'), newEntry);
       console.log("Entry added successfully:", newEntry);
       setSuccessMessage("Your report has been submitted successfully!");
-      setForm({ type: "Found", document: "", name: "", location: "", contact: "", dateFound: "", description: "", currentLocation: "" });
+      setForm({ 
+        type: "Found", 
+        document: "", 
+        name: "", 
+        location: "", 
+        contact: "", 
+        dateFound: "", 
+        description: "", 
+        currentLocation: "",
+        email: "",
+        lat: null,
+        lon: null,
+        category: ""
+      });
     } catch (error) {
       console.error("Error adding entry:", error);
       setSuccessMessage("There was an error submitting your report. Please try again.");
@@ -68,7 +133,34 @@ function ReportFound() {
                   </div>
                   <div className="col-md-6">
                     <label className="form-label fw-bold">Location Found</label>
-                    <input type="text" className="form-control" name="location" value={form.location} onChange={handleChange} placeholder="e.g., Park, Office, Mall" required />
+                    <div className="input-group">
+                      <input 
+                        type="text" 
+                        className="form-control" 
+                        name="location" 
+                        value={form.location} 
+                        onChange={handleChange} 
+                        placeholder="e.g., Park, Office, Mall" 
+                        required 
+                      />
+                      <button 
+                        type="button" 
+                        className="btn btn-outline-secondary" 
+                        onClick={getLocation}
+                        disabled={locationLoading}
+                      >
+                        {locationLoading ? (
+                          <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        ) : (
+                          <i className="bi bi-geo-alt"></i>
+                        )}
+                      </button>
+                    </div>
+                    {form.lat && form.lon && (
+                      <small className="text-success">
+                        <i className="bi bi-check-circle"></i> Location coordinates captured
+                      </small>
+                    )}
                   </div>
                 </div>
                 <div className="row mb-3">

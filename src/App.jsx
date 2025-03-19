@@ -1,34 +1,85 @@
+// src/App.jsx
+import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./Components/AuthContext"; // Updated import path
+import PrivateRoute from "./Components/PrivateRoute";
+
+// Navigation & Layout
 import Navbar from "./Components/Navbar";
+
+// Pages
 import Home from "./Components/Home";
-import ReportLost from "./Components/ReportLost";
-import ReportFound from "./Components/ReportFound";
-import Search from "./Components/Search";
 import About from "./Components/About";
 import Contact from "./Components/Contact";
 import LostFound from "./Components/LostFound";
+import ReportLost from "./Components/ReportLost";
+import ReportFound from "./Components/ReportFound";
+import Search from "./Components/Search";
 import BloodDonor from "./Components/BloodDonor";
-import MatchLostAndFound from "./Components/MatchLostAndFound"; // AI Matching Component
+import MatchLostAndFound from "./Components/MatchLostAndFound";
+
+// Auth Components
+import Login from "./Components/Login";
+import Signup from "./Components/Signup";
+import ForgotPassword from "./Components/ForgotPassword";
+import Profile from "./Components/Profile";
+import MyReports from "./Components/MyReports";
 
 function App() {
   return (
     <Router>
-      <Navbar />
-      <div className="content">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/report-lost" element={<ReportLost />} />
-          <Route path="/report-found" element={<ReportFound />} />
-          <Route path="/search" element={<Search />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/lost-found" element={<LostFound />} />
-          <Route path="/blood-donor" element={<BloodDonor />} />
-          <Route path="/match-lost-found" element={<MatchLostAndFound />} /> {/* AI Matching Route */}
-        </Routes>
-      </div>
+      <AuthProvider>
+        <Navbar />
+        <div className="content">
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<Home />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/blood-donor" element={<BloodDonor />} />
+            <Route path="/search" element={<Search />} />
+            
+            {/* Authentication Routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            
+            {/* Protected Routes */}
+            <Route path="/lost-found" element={
+              <PrivateRoute>
+                <LostFound />
+              </PrivateRoute>
+            } />
+            <Route path="/report-lost" element={
+              <PrivateRoute>
+                <ReportLost />
+              </PrivateRoute>
+            } />
+            <Route path="/report-found" element={
+              <PrivateRoute>
+                <ReportFound />
+              </PrivateRoute>
+            } />
+            <Route path="/match-lost-found" element={
+              <PrivateRoute>
+                <MatchLostAndFound />
+              </PrivateRoute>
+            } />
+            <Route path="/profile" element={
+              <PrivateRoute>
+                <Profile />
+              </PrivateRoute>
+            } />
+            <Route path="/my-reports" element={
+              <PrivateRoute>
+                <MyReports />
+              </PrivateRoute>
+            } />
+          </Routes>
+        </div>
+      </AuthProvider>
     </Router>
   );
 }
-//aaagitt
+
 export default App;

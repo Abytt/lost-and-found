@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { getDatabase, ref, push } from "firebase/database";
 import { app } from "../firebase";
+import { useAuth } from "./AuthContext"; // Updated from "../contexts/AuthContext" to "./AuthContext"
 
 const database = getDatabase(app);
 
 function ReportLost() {
+  const { currentUser } = useAuth();
   const [form, setForm] = useState({ 
     type: "Lost", 
     document: "", 
@@ -13,10 +15,12 @@ function ReportLost() {
     contact: "", 
     dateLost: "", 
     additionalDetails: "",
-    email: "",
+    email: currentUser.email,
     lat: null,
     lon: null,
-    category: "" // Adding category field for better matching
+    category: "", // Adding category field for better matching
+    userId: currentUser.uid,
+    userName: currentUser.displayName || ""
   });
   const [successMessage, setSuccessMessage] = useState("");
   const [locationLoading, setLocationLoading] = useState(false);
@@ -80,10 +84,12 @@ function ReportLost() {
         contact: "", 
         dateLost: "", 
         additionalDetails: "",
-        email: "",
+        email: currentUser.email, // Keep the user's email
         lat: null,
         lon: null,
-        category: ""
+        category: "",
+        userId: currentUser.uid, // Keep the user ID
+        userName: currentUser.displayName || "" // Keep the user name
       });
     } catch (error) {
       console.error("Error adding entry:", error);

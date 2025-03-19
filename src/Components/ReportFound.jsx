@@ -1,10 +1,13 @@
+// src/Components/ReportFound.jsx
 import React, { useState } from "react";
 import { getDatabase, ref, push } from "firebase/database";
-import { app } from "../firebase";
-
-const database = getDatabase(app);
+import { app } from "../firebase"; // Updated path to firebase.js
+import { useAuth } from "./AuthContext";
 
 function ReportFound() {
+  const { currentUser } = useAuth();
+  const database = getDatabase(app);
+  
   const [form, setForm] = useState({ 
     type: "Found", 
     document: "", 
@@ -14,10 +17,12 @@ function ReportFound() {
     dateFound: "", 
     description: "", 
     currentLocation: "",
-    email: "",
+    email: currentUser.email,
     lat: null,
     lon: null,
-    category: "" // Adding category field for better matching
+    category: "", // Adding category field for better matching
+    userId: currentUser.uid,
+    userName: currentUser.displayName || ""
   });
   const [successMessage, setSuccessMessage] = useState("");
   const [locationLoading, setLocationLoading] = useState(false);
@@ -82,10 +87,12 @@ function ReportFound() {
         dateFound: "", 
         description: "", 
         currentLocation: "",
-        email: "",
+        email: currentUser.email,
         lat: null,
         lon: null,
-        category: ""
+        category: "",
+        userId: currentUser.uid,
+        userName: currentUser.displayName || ""
       });
     } catch (error) {
       console.error("Error adding entry:", error);

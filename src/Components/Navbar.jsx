@@ -1,11 +1,15 @@
+// src/Components/Navbar.jsx - Updated with proper dropdown structure
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "./AuthContext"; // Updated import path
+import { useAuth } from "./AuthContext";
 
 function Navbar() {
   const [error, setError] = useState("");
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
+  
+  // Safely check if user is admin
+  const userIsAdmin = currentUser && isAdmin && isAdmin();
 
   async function handleLogout() {
     setError("");
@@ -18,105 +22,198 @@ function Navbar() {
   }
 
   return (
-    <nav className="navbar navbar-expand-lg navbar-dark bg-primary sticky-top shadow-sm">
+    <nav className="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
       <div className="container">
-        <Link className="navbar-brand fw-bold" to="/">
-          <i className="bi bi-search-heart me-2"></i>
-          DocTrack
+        <Link className="navbar-brand d-flex align-items-center" to="/">
+          <i className="bi bi-archive-fill me-2"></i>
+          <span className="fw-bold">DocTrack</span>
         </Link>
-        <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        
+        <button 
+          className="navbar-toggler" 
+          type="button" 
+          data-bs-toggle="collapse" 
+          data-bs-target="#navbarContent"
+        >
           <span className="navbar-toggler-icon"></span>
         </button>
-        <div className="collapse navbar-collapse" id="navbarNav">
-          <ul className="navbar-nav me-auto">
+        
+        <div className="collapse navbar-collapse" id="navbarContent">
+          <ul className="navbar-nav me-auto mb-2 mb-lg-0">
             <li className="nav-item">
-              <Link className="nav-link" to="/"><i className="bi bi-house-door me-1"></i> Home</Link>
+              <Link className="nav-link" to="/">
+                <i className="bi bi-house-door me-1"></i> Home
+              </Link>
             </li>
+            
             {currentUser && (
               <>
-                <li className="nav-item">
-                  <Link className="nav-link" to="/report-lost"><i className="bi bi-exclamation-triangle me-1"></i> Report Lost</Link>
+                {/* Fixed Report Dropdown */}
+                <li className="nav-item dropdown">
+                  <a 
+                    className="nav-link dropdown-toggle" 
+                    href="#" 
+                    id="reportDropdown" 
+                    role="button" 
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                  >
+                    <i className="bi bi-journal-plus me-1"></i> Report
+                  </a>
+                  <ul className="dropdown-menu" aria-labelledby="reportDropdown">
+                    <li>
+                      <Link className="dropdown-item" to="/report-lost">
+                        <i className="bi bi-exclamation-triangle-fill text-danger me-2"></i>
+                        Report Lost Item
+                      </Link>
+                    </li>
+                    <li>
+                      <Link className="dropdown-item" to="/report-found">
+                        <i className="bi bi-check-circle-fill text-success me-2"></i>
+                        Report Found Item
+                      </Link>
+                    </li>
+                  </ul>
                 </li>
+                
                 <li className="nav-item">
-                  <Link className="nav-link" to="/report-found"><i className="bi bi-check-circle me-1"></i> Report Found</Link>
+                  <Link className="nav-link" to="/lost-found">
+                    <i className="bi bi-list-ul me-1"></i> Lost & Found
+                  </Link>
+                </li>
+                
+                <li className="nav-item">
+                  <Link className="nav-link" to="/my-reports">
+                    <i className="bi bi-file-earmark-text me-1"></i> My Reports
+                  </Link>
                 </li>
               </>
             )}
+            
             <li className="nav-item">
-              <Link className="nav-link" to="/search"><i className="bi bi-search me-1"></i> Search</Link>
+              <Link className="nav-link" to="/search">
+                <i className="bi bi-search me-1"></i> Search
+              </Link>
             </li>
-            {currentUser && (
-              <>
-                <li className="nav-item">
-                  <Link className="nav-link" to="/lost-found"><i className="bi bi-list-ul me-1"></i> Lost & Found</Link>
-                </li>
-                <li className="nav-item">
-                  <Link className="nav-link" to="/match-lost-found"><i className="bi bi-lightning me-1"></i> AI Matches</Link>
-                </li>
-              </>
-            )}
-            <li className="nav-item">
-              <Link className="nav-link" to="/about"><i className="bi bi-info-circle me-1"></i> About</Link>
-            </li>
-            <li className="nav-item">
-              <Link className="nav-link" to="/contact"><i className="bi bi-envelope me-1"></i> Contact</Link>
-            </li>
-            <li className="nav-item">
-              <Link className="nav-link" to="/blood-donor">Blood Donor Helper</Link>
-            </li>
-          </ul>
-          
-          {/* Authentication Links */}
-          <ul className="navbar-nav ms-auto">
-            {currentUser ? (
+            
+            {userIsAdmin && (
               <li className="nav-item dropdown">
-                <a
-                  className="nav-link dropdown-toggle"
-                  href="#"
-                  id="navbarDropdown"
-                  role="button"
+                <a 
+                  className="nav-link dropdown-toggle" 
+                  href="#" 
+                  id="adminDropdown" 
+                  role="button" 
                   data-bs-toggle="dropdown"
                   aria-expanded="false"
                 >
-                  <i className="bi bi-person-circle me-1"></i>
-                  {currentUser.displayName || currentUser.email}
+                  <i className="bi bi-shield-lock me-1"></i> Admin
                 </a>
-                <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                <ul className="dropdown-menu" aria-labelledby="adminDropdown">
+                  <li>
+                    <Link className="dropdown-item" to="/admin">
+                      <i className="bi bi-speedometer2 me-2"></i>
+                      Dashboard
+                    </Link>
+                  </li>
+                  <li>
+                    <Link className="dropdown-item" to="/match-lost-found">
+                      <i className="bi bi-lightning-charge me-2"></i>
+                      AI Matches
+                    </Link>
+                  </li>
+                </ul>
+              </li>
+            )}
+            
+            <li className="nav-item dropdown">
+              <a 
+                className="nav-link dropdown-toggle" 
+                href="#" 
+                id="infoDropdown" 
+                role="button" 
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                <i className="bi bi-info-circle me-1"></i> Info
+              </a>
+              <ul className="dropdown-menu" aria-labelledby="infoDropdown">
+                <li>
+                  <Link className="dropdown-item" to="/about">
+                    <i className="bi bi-people me-2"></i>
+                    About Us
+                  </Link>
+                </li>
+                <li>
+                  <Link className="dropdown-item" to="/contact">
+                    <i className="bi bi-envelope me-2"></i>
+                    Contact
+                  </Link>
+                </li>
+                <li>
+                  <Link className="dropdown-item" to="/blood-donor">
+                    <i className="bi bi-heart me-2"></i>
+                    Blood Donor Helper
+                  </Link>
+                </li>
+              </ul>
+            </li>
+          </ul>
+          
+          <div className="d-flex">
+            {currentUser ? (
+              <div className="dropdown">
+                <a 
+                  href="#" 
+                  className="d-flex align-items-center text-white text-decoration-none dropdown-toggle" 
+                  id="userDropdown" 
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                >
+                  <div className="rounded-circle bg-white text-primary d-flex justify-content-center align-items-center me-2" style={{width: "32px", height: "32px"}}>
+                    <i className="bi bi-person-fill"></i>
+                  </div>
+                  <span>{currentUser.displayName || currentUser.email}</span>
+                  {userIsAdmin && (
+                    <span className="badge bg-warning text-dark ms-2">Admin</span>
+                  )}
+                </a>
+                <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                   <li>
                     <Link className="dropdown-item" to="/profile">
-                      <i className="bi bi-person me-2"></i>Profile
+                      <i className="bi bi-person-circle me-2"></i>
+                      Profile
                     </Link>
                   </li>
                   <li>
                     <Link className="dropdown-item" to="/my-reports">
-                      <i className="bi bi-file-earmark-text me-2"></i>My Reports
+                      <i className="bi bi-file-earmark-text me-2"></i>
+                      My Reports
                     </Link>
                   </li>
                   <li><hr className="dropdown-divider" /></li>
                   <li>
                     <button className="dropdown-item text-danger" onClick={handleLogout}>
-                      <i className="bi bi-box-arrow-right me-2"></i>Logout
+                      <i className="bi bi-box-arrow-right me-2"></i>
+                      Logout
                     </button>
                   </li>
                 </ul>
-              </li>
+              </div>
             ) : (
-              <>
-                <li className="nav-item">
-                  <Link className="nav-link" to="/login">
-                    <i className="bi bi-box-arrow-in-right me-1"></i>Login
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link className="nav-link btn btn-outline-light btn-sm py-1 px-3 mt-1" to="/signup">
-                    Sign Up
-                  </Link>
-                </li>
-              </>
+              <div className="d-flex">
+                <Link to="/login" className="btn btn-outline-light me-2">
+                  <i className="bi bi-box-arrow-in-right me-1"></i> Login
+                </Link>
+                
+              </div>
             )}
-          </ul>
+          </div>
           
-          {error && <div className="alert alert-danger mt-2 mb-0 py-1 px-2">{error}</div>}
+          {error && (
+            <div className="alert alert-danger mt-2 py-1 px-2">
+              {error}
+            </div>
+          )}
         </div>
       </div>
     </nav>

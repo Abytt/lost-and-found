@@ -2,6 +2,8 @@
 import React, { useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthContext"; // Updated import path
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 
 function Signup() {
   const nameRef = useRef();
@@ -30,6 +32,13 @@ function Signup() {
       // Update the user's display name
       await updateUserProfile(nameRef.current.value);
       
+      // Add user to Firestore with admin flag
+      await setDoc(doc(db, 'users', userCredential.user.uid), {
+        email: emailRef.current.value,
+        name: nameRef.current.value,
+        isAdmin: false  // Default to non-admin
+      });
+
       // Navigate to home page
       navigate("/");
     } catch (error) {

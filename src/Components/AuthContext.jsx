@@ -8,8 +8,8 @@ import {
   sendPasswordResetEmail,
   updateProfile 
 } from "firebase/auth";
-import { auth, db } from "../firebase";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { auth, rtdb } from "../firebase"; // Make sure auth is imported
+import { ref, get, set, onValue } from "firebase/database";
 
 const AuthContext = createContext();
 
@@ -31,12 +31,12 @@ export function AuthProvider({ children }) {
       // Update profile with displayName
       await updateProfile(userCredential.user, { displayName });
       
-      // Store additional user info in Firestore
-      await setDoc(doc(db, 'users', userCredential.user.uid), {
+      // Store additional user info in Realtime Database
+      await set(ref(rtdb, `users/${userCredential.user.uid}`), {
         name: displayName,
         email,
-        role, // Store the role in Firestore
-        createdAt: new Date()
+        role, // Store the role in database
+        createdAt: new Date().toISOString()
       });
       
       return userCredential;
@@ -61,41 +61,46 @@ export function AuthProvider({ children }) {
     return updateProfile(auth.currentUser, { displayName });
   }
 
-  // Check if user is admin
+  // Check if user is admin - add debug logging
   function isAdmin() {
+    console.log("isAdmin check - userRole:", userRole);
     return userRole === 'admin';
   }
 
-  // Get user data from Firestore
-  async function getUserData(user) {
-    if (!user) return;
-    try {
-      const docRef = doc(db, 'users', user.uid);
-      const docSnap = await getDoc(docRef);
-      
-      if (docSnap.exists()) {
-        const userData = docSnap.data();
+  // Get user data from Realtime Database - Using onValue for real-time updates
+  useEffect(() => {
+    if (!currentUser) return;
+    
+    console.log("Setting up user data listener for:", currentUser.uid);
+    const userRef = ref(rtdb, `users/${currentUser.uid}`);
+    
+    const unsubscribe = onValue(userRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const userData = snapshot.val();
+        console.log("User data updated:", userData);
         setUserRole(userData.role || 'user');
-        return userData;
       } else {
         console.log("No user data found!");
-        return null;
+        setUserRole('user');
       }
-    } catch (error) {
+    }, (error) => {
       console.error("Error fetching user data:", error);
-    }
-  }
+    });
+    
+    return unsubscribe;
+  }, [currentUser]);
 
   // Auth state observer
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setCurrentUser(user);
-        await getUserData(user);
-      } else {
-        setCurrentUser(null);
+    console.log("Setting up auth state observer");
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      console.log("Auth state changed:", user ? user.email : "logged out");
+      setCurrentUser(user);
+      
+      if (!user) {
         setUserRole('user');
       }
+      
       setLoading(false);
     });
 
@@ -112,6 +117,12 @@ export function AuthProvider({ children }) {
     resetPassword,
     updateUserProfile
   };
+
+  console.log("AuthContext providing value:", { 
+    currentUser: currentUser?.email, 
+    userRole, 
+    isAdmin: isAdmin() 
+  });
 
   return (
     <AuthContext.Provider value={value}>

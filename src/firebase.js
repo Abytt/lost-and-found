@@ -9,7 +9,7 @@ import { getFirestore } from 'firebase/firestore';
 const firebaseConfig = {
   apiKey: "AIzaSyBXOkeIq2OeIh_RjsA_ccom0WHsxrD8apc",
   authDomain: "lostandfind-b3d72.firebaseapp.com",
-  databaseURL: "https://lostandfind-b3d72-default-rtdb.asia-southeast1.firebasedatabase.app", 
+  databaseURL: "https://lostandfind-b3d72-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "lostandfind-b3d72",
   storageBucket: "lostandfind-b3d72.appspot.com",
   messagingSenderId: "716726022794",
@@ -19,10 +19,15 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const database = getDatabase(app);
-const auth = getAuth(app); // Make sure this is called
-const analytics = getAnalytics(app);
-const db = getFirestore(app);  // Add this line
 
-export { app, database, auth, db };
+// Initialize services
+const auth = getAuth(app);
+const rtdb = getDatabase(app);
+const db = getFirestore(app);
+const analytics = getAnalytics(app);
+
+// Export the services with clear names
+export { app, auth, rtdb, db, analytics };
+
+// Default export
 export default app;

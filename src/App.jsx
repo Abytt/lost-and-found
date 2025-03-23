@@ -1,9 +1,9 @@
 // src/App.jsx
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./Components/AuthContext";
-import PrivateRoute from "./Components/PrivateRoute";
 import { AdminProvider } from './Components/AdminContext';
+import PrivateRoute from "./Components/PrivateRoute";
 
 // Navigation & Layout
 import Navbar from "./Components/Navbar";
@@ -27,6 +27,14 @@ import Profile from "./Components/Profile";
 import MyReports from "./Components/MyReports";
 import AdminDashboard from "./Components/AdminDashboard";
 
+// Test Component
+const AdminTest = () => (
+  <div className="container mt-5">
+    <h1>Admin Test Page</h1>
+    <p>This is a test to verify routing is working correctly.</p>
+  </div>
+);
+
 function App() {
   console.log("App rendered");
   return (
@@ -43,49 +51,73 @@ function App() {
               <Route path="/blood-donor" element={<BloodDonor />} />
               <Route path="/search" element={<Search />} />
               
+              {/* Test Routes */}
+              <Route path="/admintest" element={<AdminTest />} />
+              
               {/* Authentication Routes */}
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               
               {/* Protected Routes - Regular Users */}
-              <Route path="/lost-found" element={
-                <PrivateRoute>
-                  <LostFound />
-                </PrivateRoute>
-              } />
-              <Route path="/report-lost" element={
-                <PrivateRoute>
-                  <ReportLost />
-                </PrivateRoute>
-              } />
-              <Route path="/report-found" element={
-                <PrivateRoute>
-                  <ReportFound />
-                </PrivateRoute>
-              } />
-              <Route path="/profile" element={
-                <PrivateRoute>
-                  <Profile />
-                </PrivateRoute>
-              } />
-              <Route path="/my-reports" element={
-                <PrivateRoute>
-                  <MyReports />
-                </PrivateRoute>
-              } />
+              <Route 
+                path="/lost-found" 
+                element={
+                  <PrivateRoute>
+                    <LostFound />
+                  </PrivateRoute>
+                } 
+              />
+              <Route 
+                path="/report-lost" 
+                element={
+                  <PrivateRoute>
+                    <ReportLost />
+                  </PrivateRoute>
+                } 
+              />
+              <Route 
+                path="/report-found" 
+                element={
+                  <PrivateRoute>
+                    <ReportFound />
+                  </PrivateRoute>
+                } 
+              />
+              <Route 
+                path="/profile" 
+                element={
+                  <PrivateRoute>
+                    <Profile />
+                  </PrivateRoute>
+                } 
+              />
+              <Route 
+                path="/my-reports" 
+                element={
+                  <PrivateRoute>
+                    <MyReports />
+                  </PrivateRoute>
+                } 
+              />
               
               {/* Admin-only Routes */}
-              <Route path="/admin" element={
-                <PrivateRoute requireAdmin={true}>
-                  <AdminDashboard />
-                </PrivateRoute>
-              } />
-              <Route path="/match-lost-found" element={
-                <PrivateRoute requireAdmin={true}>
-                  <MatchLostAndFound />
-                </PrivateRoute>
-              } />
+              <Route 
+                path="/admin" 
+                element={
+                  <PrivateRoute requireAdmin={true}>
+                    <AdminDashboard />
+                  </PrivateRoute>
+                } 
+              />
+              <Route 
+                path="/match-lost-found" 
+                element={
+                  <PrivateRoute requireAdmin={true}>
+                    <MatchLostAndFound />
+                  </PrivateRoute>
+                } 
+              />
             </Routes>
           </div>
         </AdminProvider>

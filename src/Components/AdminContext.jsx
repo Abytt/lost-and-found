@@ -1,7 +1,7 @@
 // src/Components/AdminContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
-import { getDatabase, ref, get } from "firebase/database";
+import { getDatabase, ref, get, onValue } from "firebase/database";
 
 // Create the context
 const AdminContext = createContext();
@@ -12,11 +12,8 @@ export function useAdmin() {
 }
 
 export function AdminProvider({ children }) {
-  // Get auth information with safe fallbacks
-  const auth = useAuth() || {};
-  const currentUser = auth.currentUser;
-  const isAdminFunc = auth.isAdmin;
-  
+  const { currentUser } = useAuth();
+  const [isAdminUser, setIsAdminUser] = useState(false);
   const [adminStats, setAdminStats] = useState({
     totalUsers: 0,
     totalLostItems: 0,
@@ -25,122 +22,108 @@ export function AdminProvider({ children }) {
   });
   const [loading, setLoading] = useState(true);
 
-  // Helper function to safely check admin status
-  const checkIsAdmin = () => {
-    return isAdminFunc && typeof isAdminFunc === 'function' && isAdminFunc();
-  };
-
-  // Load admin dashboard statistics
+  // Check if the current user is an admin
   useEffect(() => {
-    async function loadAdminStats() {
-      // Only proceed if user is logged in and is admin
-      if (!currentUser || !checkIsAdmin()) {
+    const checkAdminStatus = async () => {
+      if (!currentUser) {
+        setIsAdminUser(false);
         setLoading(false);
         return;
       }
 
       try {
         const db = getDatabase();
-        
-        // Fetch users count
-        const usersRef = ref(db, "users");
-        const usersSnapshot = await get(usersRef);
-        const usersCount = usersSnapshot.exists() ? Object.keys(usersSnapshot.val()).length : 0;
-        
-        // Fetch entries
-        const entriesRef = ref(db, "entries");
-        const entriesSnapshot = await get(entriesRef);
-        let lostCount = 0;
-        let foundCount = 0;
-        
-        if (entriesSnapshot.exists()) {
-          const entries = entriesSnapshot.val();
-          Object.values(entries).forEach(entry => {
-            if (entry.type === "Lost") lostCount++;
-            if (entry.type === "Found") foundCount++;
-          });
+        const userRef = ref(db, `users/${currentUser.uid}`);
+        const snapshot = await get(userRef);
+
+        if (snapshot.exists()) {
+          const userData = snapshot.val();
+          setIsAdminUser(userData.role === 'admin');
+        } else {
+          setIsAdminUser(false);
         }
-        
-        // Fetch matches
-        const matchesRef = ref(db, "matches");
-        const matchesSnapshot = await get(matchesRef);
-        const matchesCount = matchesSnapshot.exists() ? Object.keys(matchesSnapshot.val()).length : 0;
-        
-        setAdminStats({
-          totalUsers: usersCount,
-          totalLostItems: lostCount,
-          totalFoundItems: foundCount,
-          totalMatches: matchesCount
-        });
       } catch (error) {
-        console.error("Error loading admin stats:", error);
+        console.error("Error checking admin status:", error);
+        setIsAdminUser(false);
       } finally {
         setLoading(false);
       }
-    }
-    
-    // Check if we can load stats
-    if (currentUser) {
-      loadAdminStats();
-    } else {
-      setLoading(false);
-    }
-  }, [currentUser, isAdminFunc]);
+    };
 
-  // Function to refresh stats
-  const refreshStats = async () => {
-    if (!currentUser || !checkIsAdmin()) {
+    checkAdminStatus();
+  }, [currentUser]);
+
+  // Load admin dashboard statistics
+  useEffect(() => {
+    if (!currentUser || !isAdminUser) {
       return;
     }
-    
+
+    const db = getDatabase();
     setLoading(true);
-    
-    try {
-      const db = getDatabase();
-      
-      // Fetch users count
-      const usersRef = ref(db, "users");
-      const usersSnapshot = await get(usersRef);
-      const usersCount = usersSnapshot.exists() ? Object.keys(usersSnapshot.val()).length : 0;
-      
-      // Fetch entries
-      const entriesRef = ref(db, "entries");
-      const entriesSnapshot = await get(entriesRef);
-      let lostCount = 0;
-      let foundCount = 0;
-      
-      if (entriesSnapshot.exists()) {
-        const entries = entriesSnapshot.val();
+
+    // Realtime listeners for admin stats
+    // Users count
+    const usersRef = ref(db, "users");
+    const usersListener = onValue(usersRef, (snapshot) => {
+      const usersCount = snapshot.exists() ? Object.keys(snapshot.val()).length : 0;
+      setAdminStats(prev => ({ ...prev, totalUsers: usersCount }));
+    });
+
+    // Entries (lost and found)
+    const entriesRef = ref(db, "entries");
+    const entriesListener = onValue(entriesRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const entries = snapshot.val();
+        let lostCount = 0;
+        let foundCount = 0;
+
         Object.values(entries).forEach(entry => {
           if (entry.type === "Lost") lostCount++;
           if (entry.type === "Found") foundCount++;
         });
+
+        setAdminStats(prev => ({
+          ...prev,
+          totalLostItems: lostCount,
+          totalFoundItems: foundCount
+        }));
+      } else {
+        setAdminStats(prev => ({
+          ...prev,
+          totalLostItems: 0,
+          totalFoundItems: 0
+        }));
       }
-      
-      // Fetch matches
-      const matchesRef = ref(db, "matches");
-      const matchesSnapshot = await get(matchesRef);
-      const matchesCount = matchesSnapshot.exists() ? Object.keys(matchesSnapshot.val()).length : 0;
-      
-      setAdminStats({
-        totalUsers: usersCount,
-        totalLostItems: lostCount,
-        totalFoundItems: foundCount,
-        totalMatches: matchesCount
-      });
-    } catch (error) {
-      console.error("Error refreshing admin stats:", error);
-    } finally {
+    });
+
+    // Matches
+    const matchesRef = ref(db, "matches");
+    const matchesListener = onValue(matchesRef, (snapshot) => {
+      const matchesCount = snapshot.exists() ? Object.keys(snapshot.val()).length : 0;
+      setAdminStats(prev => ({ ...prev, totalMatches: matchesCount }));
       setLoading(false);
-    }
+    });
+
+    // Cleanup function
+    return () => {
+      // Detach listeners when component unmounts
+      usersListener && usersListener();
+      entriesListener && entriesListener();
+      matchesListener && matchesListener();
+    };
+  }, [currentUser, isAdminUser]);
+
+  // Function to check if user is admin
+  const isAdmin = () => {
+    return isAdminUser;
   };
 
   // Value to be provided by the context
   const value = {
     adminStats,
-    refreshStats,
     loading,
-    isAdmin: checkIsAdmin
+    isAdmin
   };
 
   return (

@@ -1,16 +1,15 @@
 // src/Components/Signup.jsx
 import React, { useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "./AuthContext"; // Updated import path
-import { doc, setDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { useAuth } from "./AuthContext";
+import { rtdb } from '../firebase';
 
 function Signup() {
   const nameRef = useRef();
   const emailRef = useRef();
   const passwordRef = useRef();
   const passwordConfirmRef = useRef();
-  const { signup, updateUserProfile } = useAuth();
+  const { signup } = useAuth();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -26,19 +25,14 @@ function Signup() {
       setError("");
       setLoading(true);
       
-      // Create the user
-      const userCredential = await signup(emailRef.current.value, passwordRef.current.value);
+      // Create the user with all required parameters
+      await signup(
+        emailRef.current.value, 
+        passwordRef.current.value, 
+        nameRef.current.value, // Pass the display name
+        'user' // Pass the role
+      );
       
-      // Update the user's display name
-      await updateUserProfile(nameRef.current.value);
-      
-      // Add user to Firestore with admin flag
-      await setDoc(doc(db, 'users', userCredential.user.uid), {
-        email: emailRef.current.value,
-        name: nameRef.current.value,
-        isAdmin: false  // Default to non-admin
-      });
-
       // Navigate to home page
       navigate("/");
     } catch (error) {

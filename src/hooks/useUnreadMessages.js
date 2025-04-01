@@ -1,46 +1,63 @@
 import { useState, useEffect } from 'react';
-import { rtdb } from '../firebase';
-import { ref, onValue } from 'firebase/database';
+import { db } from '../firebase';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../Components/AuthContext';
 
 export function useUnreadMessages() {
-    const [unreadCount, setUnreadCount] = useState(0);
-    const { currentUser } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [error, setError] = useState(null);
+  const { currentUser } = useAuth();
 
-    const playNotificationSound = () => {
-        const audio = new Audio('/notification.mp3'); // Add an audio file to your public folder
-        audio.play().catch(err => console.log('Error playing notification sound:', err));
+  useEffect(() => {
+    if (!currentUser) {
+      setUnreadCount(0);
+      return;
+    }
+
+    let unsubscribe;
+    let retryCount = 0;
+    const maxRetries = 3;
+
+    const setupListener = async () => {
+      try {
+        const messagesRef = collection(db, 'messages');
+        const q = query(
+          messagesRef,
+          where('recipientId', '==', currentUser.uid),
+          where('read', '==', false)
+        );
+
+        unsubscribe = onSnapshot(q, 
+          (snapshot) => {
+            setUnreadCount(snapshot.size);
+            setError(null);
+            retryCount = 0;
+          },
+          (error) => {
+            console.error('Messages listener error:', error);
+            setError(error);
+
+            // Retry logic
+            if (retryCount < maxRetries) {
+              retryCount++;
+              setTimeout(setupListener, 2000 * retryCount); // Exponential backoff
+            }
+          }
+        );
+      } catch (error) {
+        console.error('Setup listener error:', error);
+        setError(error);
+      }
     };
 
-    useEffect(() => {
-        let previousCount = 0;
-        
-        if (!currentUser) {
-            setUnreadCount(0);
-            return;
-        }
+    setupListener();
 
-        const messagesRef = ref(rtdb, 'messages');
-        const unsubscribe = onValue(messagesRef, (snapshot) => {
-            if (snapshot.exists()) {
-                const messages = Object.values(snapshot.val());
-                const unreadMessages = messages.filter(msg => 
-                    (msg.recipientId === currentUser.uid || msg.recipientEmail === currentUser.email) 
-                    && !msg.read
-                );
-                const newCount = unreadMessages.length;
-                
-                if (newCount > previousCount) {
-                    playNotificationSound();
-                }
-                
-                previousCount = newCount;
-                setUnreadCount(newCount);
-            }
-        });
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [currentUser]);
 
-        return () => unsubscribe();
-    }, [currentUser]);
-
-    return unreadCount;
+  return { unreadCount, error };
 }

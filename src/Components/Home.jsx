@@ -1,137 +1,29 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-import React from "react";
+import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import 'bootstrap/dist/js/bootstrap.bundle.min.js';
+import { Dropdown } from 'bootstrap';
 
 function Home() {
+  useEffect(() => {
+    // Initialize all dropdowns
+    const dropdownElementList = document.querySelectorAll('.dropdown-toggle');
+    const dropdownList = [...dropdownElementList].map(dropdownToggleEl => new Dropdown(dropdownToggleEl));
+  }, []);
+
+  // Update the Report card's onClick handler
+  const handleReportClick = () => {
+    const reportDropdown = document.querySelector('#reportDropdown');
+    if (reportDropdown) {
+      const dropdown = new Dropdown(reportDropdown);
+      dropdown.toggle();
+    }
+  };
+
   return (
     <div className="home-container">
       {/* Blood Drop Animation - Fixed Position */}
-      <Link to="/blood-donor" className="blood-drop-link" style={{
-        position: "fixed",
-        top: "80px", // Position below navbar
-        right: "20px",
-        zIndex: "999",
-        cursor: "pointer",
-        textDecoration: "none"
-      }}>
-        <motion.div
-          className="blood-drop-container"
-          initial={{ scale: 1 }}
-          animate={{
-            scale: [1, 1.1, 1],
-            y: [0, 5, 0]
-          }}
-          transition={{
-            repeat: Infinity,
-            duration: 2,
-            ease: "easeInOut"
-          }}
-          whileHover={{ scale: 1.2 }}
-        >
-          <div className="blood-drop" style={{
-            width: "40px",
-            height: "60px",
-            background: "linear-gradient(135deg, #ff0000, #b30000)",
-            borderRadius: "50% 50% 50% 50% / 60% 60% 40% 40%",
-            position: "relative",
-            boxShadow: "0 4px 8px rgba(0,0,0,0.3)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            overflow: "hidden"
-          }}>
-            <motion.div
-              className="pulse"
-              initial={{ opacity: 0.5, scale: 0.8 }}
-              animate={{
-                opacity: [0.5, 1, 0.5],
-                scale: [0.8, 1, 0.8]
-              }}
-              transition={{
-                repeat: Infinity,
-                duration: 1.5,
-                ease: "easeInOut"
-              }}
-              style={{
-                width: "20px",
-                height: "20px",
-                borderRadius: "50%",
-                background: "rgba(255,255,255,0.4)"
-              }}
-            />
-          </div>
-          <motion.div
-            className="blood-drop-text"
-            initial={{ opacity: 0 }}
-            whileHover={{ opacity: 1 }}
-            style={{
-              marginTop: "5px",
-              background: "#b30000",
-              color: "white",
-              padding: "5px 10px",
-              borderRadius: "15px",
-              fontSize: "12px",
-              fontWeight: "bold",
-              textAlign: "center",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.2)"
-            }}
-          >
-            Donate Blood. Save Lives
-          </motion.div>
-
-          {/* Ripple Effect */}
-          <motion.div
-            className="ripple"
-            initial={{ opacity: 0.7, scale: 1 }}
-            animate={{
-              opacity: 0,
-              scale: 1.5
-            }}
-            transition={{
-              repeat: Infinity,
-              duration: 2,
-              ease: "easeOut"
-            }}
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              width: "40px",
-              height: "40px",
-              borderRadius: "50%",
-              border: "2px solid #ff0000",
-              zIndex: "-1"
-            }}
-          />
-        </motion.div>
-      </Link>
+      
 
       {/* Hero Section with Improved Gradient and Layout */}
       <section className="hero-section py-5" style={{
@@ -257,18 +149,25 @@ function Home() {
             viewport={{ once: true }}
           >
             <motion.div className="col-md-4" variants={{ hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0 } }}>
-              <div className="card h-100 border-0" style={{
-                borderRadius: "16px",
-                boxShadow: "0 10px 30px rgba(0,0,0,0.05)",
-                transition: "transform 0.3s, box-shadow 0.3s",
-                overflow: "hidden"
-              }} onMouseOver={(e) => {
-                e.currentTarget.style.transform = "translateY(-10px)";
-                e.currentTarget.style.boxShadow = "0 15px 35px rgba(0,0,0,0.1)";
-              }} onMouseOut={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "0 10px 30px rgba(0,0,0,0.05)";
-              }}>
+              <div 
+                className="card h-100 border-0" 
+                style={{
+                  borderRadius: "16px",
+                  boxShadow: "0 10px 30px rgba(0,0,0,0.05)",
+                  transition: "transform 0.3s, box-shadow 0.3s",
+                  overflow: "hidden",
+                  cursor: "pointer" // Add cursor pointer
+                }} 
+                onClick={handleReportClick}  // Replace the existing onClick handler
+                onMouseOver={(e) => {
+                  e.currentTarget.style.transform = "translateY(-10px)";
+                  e.currentTarget.style.boxShadow = "0 15px 35px rgba(0,0,0,0.1)";
+                }} 
+                onMouseOut={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "0 10px 30px rgba(0,0,0,0.05)";
+                }}
+              >
                 <div className="card-body text-center p-4">
                   <div style={{
                     width: "80px",

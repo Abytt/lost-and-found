@@ -225,34 +225,38 @@ function Messages() {
       const conversation = conversations[activeConversation];
       if (!conversation) throw new Error('Conversation not found');
 
-      // Find recipient from participants
-      const otherParticipant = Array.from(conversation.participants)
-        .find(p => p.id !== currentUser.uid);
-      
-      if (!otherParticipant) throw new Error('Recipient not found');
+      // Get the first message of the conversation to find the original owner
+      const firstMessage = conversation.messages[0];
+      if (!firstMessage) throw new Error('No messages found in conversation');
 
-      // Create base message object
+      // Get participant info
+      const participants = Array.from(conversation.participants);
+      const otherParticipant = participants.find(p => p.id !== currentUser.uid);
+
+      if (!otherParticipant?.id) {
+        console.error('Recipient not found in participants:', participants);
+        throw new Error('Recipient not found');
+      }
+
       const newMessage = {
         senderId: currentUser.uid,
         senderEmail: currentUser.email,
         senderName: currentUser.displayName || currentUser.email,
         recipientId: otherParticipant.id,
-        recipientEmail: otherParticipant.name.includes('@') ? otherParticipant.name : 'unknown@example.com',
+        recipientEmail: otherParticipant.name,
         recipientName: otherParticipant.name,
         itemId: conversation.itemId,
         itemType: conversation.itemType,
         itemName: conversation.itemName,
+        itemLocation: conversation.itemDetails?.location,
+        itemOwnerId: firstMessage.senderId, // Use the sender of first message as item owner
         message: replyText.trim(),
         timestamp: Date.now(),
         status: 'accepted',
         read: false
       };
 
-      // Only add itemLocation if it exists
-      if (conversation.itemDetails?.location) {
-        newMessage.itemLocation = conversation.itemDetails.location;
-      }
-
+      console.log('Sending message:', newMessage);
       await push(ref(rtdb, 'messages'), newMessage);
       setReplyText('');
     } catch (error) {

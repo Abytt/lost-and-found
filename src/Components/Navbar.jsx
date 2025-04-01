@@ -1,17 +1,45 @@
 // src/Components/Navbar.jsx - Updated with proper dropdown structure and Messages link
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthContext";
 import { useUnreadMessages } from '../hooks/useUnreadMessages';
+
+// Add this export before the Navbar function
+export const triggerReportDropdown = () => {
+  const reportDropdownBtn = document.querySelector('[data-bs-toggle="dropdown"]');
+  if (reportDropdownBtn) {
+    reportDropdownBtn.click();
+  }
+};
 
 function Navbar() {
   const [error, setError] = useState("");
   const { currentUser, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
-  const unreadMessages = useUnreadMessages();
+  const { unreadCount, error: messageError } = useUnreadMessages();
   
   // Safely check if user is admin
   const userIsAdmin = currentUser && isAdmin && isAdmin();
+
+  // Update the getUnreadBadge function
+  const getUnreadBadge = (count) => {
+    if (!count || count <= 0) return null;
+    return (
+      <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+        {count > 99 ? '99+' : count}
+        <span className="visually-hidden">unread messages</span>
+      </span>
+    );
+  };
+
+  // Add error handling for message fetching
+  useEffect(() => {
+    if (messageError) {
+      console.error('Error fetching messages:', messageError);
+      // Optionally show a user-friendly error message
+      setError('Unable to fetch messages. Please try again later.');
+    }
+  }, [messageError]);
 
   async function handleLogout() {
     setError("");
@@ -36,6 +64,9 @@ function Navbar() {
           type="button" 
           data-bs-toggle="collapse" 
           data-bs-target="#navbarContent"
+          aria-controls="navbarContent"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
         >
           <span className="navbar-toggler-icon"></span>
         </button>
@@ -54,15 +85,15 @@ function Navbar() {
                 <li className="nav-item dropdown">
                   <a 
                     className="nav-link dropdown-toggle" 
-                    href="#" 
-                    id="reportDropdown" 
-                    role="button" 
+                    href="#"
+                    role="button"
+                    id="reportDropdown"  // Add this ID
                     data-bs-toggle="dropdown"
                     aria-expanded="false"
                   >
                     <i className="bi bi-journal-plus me-1"></i> Report
                   </a>
-                  <ul className="dropdown-menu" aria-labelledby="reportDropdown">
+                  <ul className="dropdown-menu">
                     <li>
                       <Link className="dropdown-item" to="/report-lost">
                         <i className="bi bi-exclamation-triangle-fill text-danger me-2"></i>
@@ -92,14 +123,13 @@ function Navbar() {
                 
                 {/* New Messages Link */}
                 <li className="nav-item">
-                  <Link className="nav-link position-relative" to="/messages">
+                  <Link 
+                    className="nav-link position-relative" 
+                    to="/messages"
+                    aria-label={`Messages ${unreadCount ? `(${unreadCount} unread)` : ''}`}
+                  >
                     <i className="bi bi-envelope me-1"></i> Messages
-                    {unreadMessages > 0 && (
-                      <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                        {unreadMessages}
-                        <span className="visually-hidden">unread messages</span>
-                      </span>
-                    )}
+                    {getUnreadBadge(unreadCount)}
                   </Link>
                 </li>
               </>
@@ -200,18 +230,16 @@ function Navbar() {
                     </Link>
                   </li>
                   <li>
-                    <Link className="dropdown-item" to="/my-reports">
-                      <i className="bi bi-file-earmark-text me-2"></i>
-                      My Reports
-                    </Link>
-                  </li>
-                  <li>
-                    <Link className="dropdown-item position-relative" to="/messages">
+                    <Link 
+                      className="dropdown-item position-relative" 
+                      to="/messages"
+                      aria-label={`Messages ${unreadCount ? `(${unreadCount} unread)` : ''}`}
+                    >
                       <i className="bi bi-envelope me-2"></i>
                       Messages
-                      {unreadMessages > 0 && (
+                      {unreadCount > 0 && (
                         <span className="badge bg-danger ms-2">
-                          {unreadMessages}
+                          {unreadCount > 99 ? '99+' : unreadCount}
                         </span>
                       )}
                     </Link>

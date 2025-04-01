@@ -8,7 +8,7 @@ import {
   sendPasswordResetEmail,
   updateProfile
 } from "firebase/auth";
-import { auth, rtdb } from "../firebase";
+import { auth, rtdb } from "../firebase";  // Update this line to use correct path
 import { ref, get, set, onValue, update } from "firebase/database";
 
 const AuthContext = createContext();

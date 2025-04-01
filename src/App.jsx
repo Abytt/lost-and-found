@@ -17,7 +17,6 @@ import LostFound from "./Components/LostFound";
 import ReportLost from "./Components/ReportLost";
 import ReportFound from "./Components/ReportFound";
 import Search from "./Components/Search";
-import BloodDonor from "./Components/BloodDonor";
 import MatchLostAndFound from "./Components/MatchLostAndFound";
 
 // Auth Components
@@ -54,7 +53,6 @@ function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/contact" element={<Contact />} />
-                <Route path="/blood-donor" element={<BloodDonor />} />
                 <Route path="/search" element={<Search />} />
                 
                 {/* Test Routes */}

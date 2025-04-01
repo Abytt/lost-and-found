@@ -1,12 +1,14 @@
-// src/Components/Navbar.jsx - Updated with proper dropdown structure
+// src/Components/Navbar.jsx - Updated with proper dropdown structure and Messages link
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthContext";
+import { useUnreadMessages } from '../hooks/useUnreadMessages';
 
 function Navbar() {
   const [error, setError] = useState("");
   const { currentUser, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const unreadMessages = useUnreadMessages();
   
   // Safely check if user is admin
   const userIsAdmin = currentUser && isAdmin && isAdmin();
@@ -85,6 +87,19 @@ function Navbar() {
                 <li className="nav-item">
                   <Link className="nav-link" to="/my-reports">
                     <i className="bi bi-file-earmark-text me-1"></i> My Reports
+                  </Link>
+                </li>
+                
+                {/* New Messages Link */}
+                <li className="nav-item">
+                  <Link className="nav-link position-relative" to="/messages">
+                    <i className="bi bi-envelope me-1"></i> Messages
+                    {unreadMessages > 0 && (
+                      <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                        {unreadMessages}
+                        <span className="visually-hidden">unread messages</span>
+                      </span>
+                    )}
                   </Link>
                 </li>
               </>
@@ -188,6 +203,17 @@ function Navbar() {
                     <Link className="dropdown-item" to="/my-reports">
                       <i className="bi bi-file-earmark-text me-2"></i>
                       My Reports
+                    </Link>
+                  </li>
+                  <li>
+                    <Link className="dropdown-item position-relative" to="/messages">
+                      <i className="bi bi-envelope me-2"></i>
+                      Messages
+                      {unreadMessages > 0 && (
+                        <span className="badge bg-danger ms-2">
+                          {unreadMessages}
+                        </span>
+                      )}
                     </Link>
                   </li>
                   <li><hr className="dropdown-divider" /></li>

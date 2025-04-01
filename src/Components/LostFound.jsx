@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { getDatabase, ref, onValue } from "firebase/database";
+import { getDatabase, ref, onValue, push } from "firebase/database";
 import { app } from "../firebase";
 import { useAuth } from "./AuthContext"; 
 
@@ -301,6 +301,34 @@ function LostFound() {
 
   const handleCloseDetails = () => {
     setSelectedEntry(null);
+  };
+
+  const handleContactPerson = async (match, type) => {
+    try {
+      const item = type === 'finder' ? match.foundItem : match.lostItem;
+      const newMessage = {
+        senderId: currentUser.uid,
+        senderEmail: currentUser.email,
+        senderName: currentUser.displayName || currentUser.email,
+        recipientId: item.userId,
+        recipientEmail: item.email,
+        itemId: item.id,
+        itemType: type === 'finder' ? 'Found' : 'Lost',
+        itemName: item.document,
+        // Only include location if it exists
+        ...(item.location && { itemLocation: item.location }),
+        message: `Hello, I am contacting you regarding the ${type === 'finder' ? 'found' : 'lost'} ${item.document}.`,
+        timestamp: Date.now(),
+        status: 'pending',
+        read: false
+      };
+  
+      await push(ref(database, 'messages'), newMessage);
+      alert('Contact request sent successfully!');
+    } catch (error) {
+      console.error('Error sending contact request:', error);
+      alert('Failed to send contact request. Please try again.');
+    }
   };
 
   const renderContent = () => {
@@ -630,7 +658,10 @@ function LostFound() {
                             </div>
                             
                             <div className="mt-3 text-center">
-                              <button className="btn btn-primary">
+                              <button 
+                                className="btn btn-primary"
+                                onClick={() => handleContactPerson(match, 'finder')}
+                              >
                                 <i className="bi bi-chat-dots me-1"></i> Contact Finder
                               </button>
                             </div>

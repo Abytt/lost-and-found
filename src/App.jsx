@@ -1,6 +1,6 @@
 // src/App.jsx
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./Components/AuthContext";
 import { AdminProvider } from './Components/AdminContext';
 import { NotificationProvider } from './Components/NotificationContext';
@@ -28,7 +28,7 @@ import Profile from "./Components/Profile";
 import MyReports from "./Components/MyReports";
 import AdminDashboard from "./Components/AdminDashboard";
 
-// New Components for User Interaction
+// New Components
 import Messages from "./Components/Messages";
 import ItemDetail from "./Components/ItemDetails";
 
@@ -107,18 +107,18 @@ function App() {
                   } 
                 />
                 <Route 
-                  path="/item/:itemId" 
-                  element={
-                    <PrivateRoute>
-                      <ItemDetail />
-                    </PrivateRoute>
-                  } 
-                />
-                <Route 
                   path="/messages" 
                   element={
                     <PrivateRoute>
                       <Messages />
+                    </PrivateRoute>
+                  } 
+                />
+                <Route 
+                  path="/item/:itemId" 
+                  element={
+                    <PrivateRoute>
+                      <ItemDetail />
                     </PrivateRoute>
                   } 
                 />

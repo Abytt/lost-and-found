@@ -16,7 +16,11 @@ function Search() {
     onValue(entriesRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        const entriesArray = Object.values(data);
+        // Convert object to array with proper keys
+        const entriesArray = Object.entries(data).map(([key, value]) => ({
+          ...value,
+          id: key // Ensure each entry has an id
+        }));
         setEntries(entriesArray);
         setFilteredEntries(entriesArray); // Initialize filtered entries with all entries
       }
@@ -26,16 +30,23 @@ function Search() {
   const handleSearch = (e) => {
     e.preventDefault();
     let filtered = entries;
+    
+    // Filter by type (lost/found)
     if (searchType !== "all") {
-      filtered = filtered.filter(entry => entry.type.toLowerCase() === searchType);
-    }
-    if (searchTerm) {
-      filtered = filtered.filter(entry =>
-        entry.document.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        entry.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        entry.location.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(entry => 
+        entry.type && entry.type.toLowerCase() === searchType
       );
     }
+    
+    // Filter by search term
+    if (searchTerm) {
+      filtered = filtered.filter(entry =>
+        (entry.document && entry.document.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (entry.name && entry.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (entry.location && entry.location.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+    }
+    
     setFilteredEntries(filtered);
   };
 
@@ -105,14 +116,14 @@ function Search() {
                 <h4 className="mb-3">Search Results</h4>
                 {filteredEntries.length > 0 ? (
                   <ul className="list-group">
-                    {filteredEntries.map((entry) => (
-                      <li key={entry.id} className="list-group-item">
+                    {filteredEntries.map((entry, index) => (
+                      <li key={entry.id || `entry-${index}`} className="list-group-item">
                         <div className="d-flex justify-content-between align-items-center mb-2">
                           <h5 className="mb-0">
                             <span className={`badge bg-${entry.type === "Lost" ? "danger" : "success"} me-2`}>{entry.type}</span>
                             {entry.document}
                           </h5>
-                          <span className="text-muted small">{new Date(entry.id).toLocaleDateString()}</span>
+                          <span className="text-muted small">{entry.dateLost || entry.dateFound || "No date"}</span>
                         </div>
                         <p className="mb-2"><strong>Location:</strong> {entry.location}</p>
                         <button className="btn btn-sm btn-outline-primary" onClick={() => handleViewDetails(entry)}>
@@ -132,7 +143,7 @@ function Search() {
 
       {/* Detailed View Modal */}
       {selectedEntry && (
-        <div className="modal fade show" style={{ display: 'block' }}>
+        <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
           <div className="modal-dialog">
             <div className="modal-content">
               <div className="modal-header">
@@ -141,11 +152,12 @@ function Search() {
               </div>
               <div className="modal-body">
                 <p><strong>Document:</strong> {selectedEntry.document}</p>
-                <p><strong>Name:</strong> {selectedEntry.name}</p>
+                <p><strong>Name:</strong> {selectedEntry.name || "Not provided"}</p>
                 <p><strong>Location:</strong> {selectedEntry.location}</p>
                 <p><strong>Type:</strong> {selectedEntry.type}</p>
-                <p><strong>Date:</strong> {new Date(selectedEntry.id).toLocaleDateString()}</p>
-                {/* Add more details as needed */}
+                <p><strong>Date:</strong> {selectedEntry.dateLost || selectedEntry.dateFound || "No date"}</p>
+                {selectedEntry.contact && <p><strong>Contact:</strong> {selectedEntry.contact}</p>}
+                {selectedEntry.additionalDetails && <p><strong>Additional Details:</strong> {selectedEntry.additionalDetails}</p>}
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={handleCloseDetails}>Close</button>

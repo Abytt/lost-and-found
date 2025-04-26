@@ -1,196 +1,24 @@
 import React, { useState, useEffect } from "react";
-import { getDatabase, ref, onValue } from "firebase/database";
+import { getDatabase, ref, onValue, push } from "firebase/database";
 import { app } from "../firebase";
+import { useAuth } from "./AuthContext"; 
 
 const database = getDatabase(app);
 
 function LostFound() {
+  const { currentUser, isAdmin } = useAuth();
+  // Safely check if user is admin
+  const userIsAdmin = currentUser && isAdmin && isAdmin();
+  
   const [entries, setEntries] = useState([]);
   const [selectedEntry, setSelectedEntry] = useState(null);
-  const [matches, setMatches] = useState([]);
+  const [lostItemMatches, setLostItemMatches] = useState([]);
+  const [foundItemMatches, setFoundItemMatches] = useState([]);
   const [activeTab, setActiveTab] = useState("all"); // "all", "lost", "found", "matches"
+  const [matchesSubTab, setMatchesSubTab] = useState("myLost"); // "myLost", "myFound"
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const entriesRef = ref(database, "entries");
-    onValue(entriesRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const entriesArray = Object.values(data);
-        setEntries(entriesArray);
-        
-        // Run matching algorithm when data is loaded
-        runMatchingAlgorithm(entriesArray);
-      }
-      setLoading(false);
-    });
-  }, []);
-
-  // AI Matching Logic
-  const runMatchingAlgorithm = (entriesArray) => {
-    const lostItems = entriesArray.filter(item => item.type === "Lost");
-    const foundItems = entriesArray.filter(item => item.type === "Found");
-    
-    if (lostItems.length > 0 && foundItems.length > 0) {
-      const matchedResults = [];
-  
-      lostItems.forEach((lostItem) => {
-        foundItems.forEach((foundItem) => {
-          let score = 0;
-  
-          // Check document type match
-          if (lostItem.document === foundItem.document) {
-            score += 3; // Higher weight for exact document type match
-          }
-  
-          // Check name similarity (if name exists on found item)
-          if (foundItem.name && lostItem.name) {
-            const nameSimilarity = stringSimilarity(lostItem.name, foundItem.name);
-            if (nameSimilarity > 0.3) { // Lower threshold since names might be partially visible
-              score += nameSimilarity * 4; // Give even more weight to name match
-            }
-          }
-  
-          // Check location similarity
-          const locationSimilarity = stringSimilarity(lostItem.location, foundItem.location);
-          if (locationSimilarity > 0.3) {
-            score += locationSimilarity * 2;
-          }
-  
-          // Check geo proximity if coordinates exist
-          if (lostItem.lat && lostItem.lon && foundItem.lat && foundItem.lon) {
-            const distance = getDistance(
-              lostItem.lat, lostItem.lon, 
-              foundItem.lat, foundItem.lon
-            );
-            
-            if (distance < 5) { // Within 5km
-              score += 3;
-            } else if (distance < 10) { // Within 10km
-              score += 1.5;
-            }
-          }
-  
-          // Check recent time match (using the date fields from your forms)
-          if (isRecentMatch(lostItem.dateLost, foundItem.dateFound)) {
-            score += 2;
-          }
-  
-          // Store match if score is high enough
-          if (score >= 3) {
-            matchedResults.push({
-              lostItem,
-              foundItem,
-              matchScore: score.toFixed(1),
-              reasons: getMatchReasons(lostItem, foundItem)
-            });
-          }
-        });
-      });
-  
-      // Sort matches by score (highest first)
-      matchedResults.sort((a, b) => parseFloat(b.matchScore) - parseFloat(a.matchScore));
-      setMatches(matchedResults);
-    }
-  };
-
-  // Generate human-readable match reasons
-  const getMatchReasons = (lostItem, foundItem) => {
-    const reasons = [];
-    
-    if (lostItem.document === foundItem.document) {
-      reasons.push("Same document type");
-    }
-    
-    if (foundItem.name && lostItem.name) {
-      const nameSimilarity = stringSimilarity(lostItem.name, foundItem.name);
-      if (nameSimilarity > 0.3) {
-        reasons.push("Similar names");
-      }
-    }
-    
-    const locationSimilarity = stringSimilarity(lostItem.location, foundItem.location);
-    if (locationSimilarity > 0.3) {
-      reasons.push("Similar locations");
-    }
-    
-    if (lostItem.lat && lostItem.lon && foundItem.lat && foundItem.lon) {
-      const distance = getDistance(
-        lostItem.lat, lostItem.lon, 
-        foundItem.lat, foundItem.lon
-      );
-      
-      if (distance < 10) {
-        reasons.push(`Locations are ${distance.toFixed(1)}km apart`);
-      }
-    }
-    
-    if (isRecentMatch(lostItem.dateLost, foundItem.dateFound)) {
-      reasons.push("Dates are close");
-    }
-    
-    return reasons;
-  };
-
-  // Function to calculate string similarity (Jaccard Similarity)
-  const stringSimilarity = (str1, str2) => {
-    if (!str1 || !str2) return 0;
-    
-    // Convert to lowercase and split into words
-    const words1 = str1.toLowerCase().split(/\s+/);
-    const words2 = str2.toLowerCase().split(/\s+/);
-    
-    const set1 = new Set(words1);
-    const set2 = new Set(words2);
-    
-    // Calculate intersection
-    const intersection = new Set([...set1].filter(word => set2.has(word)));
-    
-    // Calculate Jaccard similarity coefficient
-    return intersection.size / (set1.size + set2.size - intersection.size);
-  };
-
-  // Function to calculate distance between coordinates
-  const getDistance = (lat1, lon1, lat2, lon2) => {
-    const toRad = (x) => (x * Math.PI) / 180;
-    const R = 6371; // Earth's radius in km
-    const dLat = toRad(lat2 - lat1);
-    const dLon = toRad(lon2 - lon1);
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c; // Distance in km
-  };
-
-  // Function to check if two dates are within a recent range (e.g., 14 days)
-  const isRecentMatch = (dateLost, dateFound) => {
-    if (!dateLost || !dateFound) return false;
-    
-    const lostDate = new Date(dateLost);
-    const foundDate = new Date(dateFound);
-    
-    // Check if dates are valid
-    if (isNaN(lostDate.getTime()) || isNaN(foundDate.getTime())) {
-      return false;
-    }
-    
-    // Calculate the absolute difference in days
-    const diffTime = Math.abs(foundDate - lostDate);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    return diffDays <= 14; // Consider recent if within 14 days
-  };
-
-  const handleViewDetails = (entry) => {
-    setSelectedEntry(entry);
-  };
-
-  const handleCloseDetails = () => {
-    setSelectedEntry(null);
-  };
-
+  // Define all styles
   const containerStyle = {
     maxWidth: "1200px",
     margin: "auto",
@@ -255,47 +83,6 @@ function LostFound() {
     fontWeight: "bold",
   };
 
-  const cardStyle = {
-    border: '1px solid #ddd',
-    borderRadius: '8px',
-    padding: '15px',
-    marginBottom: '20px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-    backgroundColor: '#f9f9f9'
-  };
-
-  const matchHeaderStyle = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '10px'
-  };
-
-  const scoreStyle = {
-    padding: '5px 10px',
-    borderRadius: '20px',
-    fontWeight: 'bold',
-    backgroundColor: '#4CAF50',
-    color: 'white'
-  };
-
-  const itemCardStyle = {
-    border: '1px solid #eee',
-    borderRadius: '5px',
-    padding: '10px',
-    marginBottom: '10px',
-    backgroundColor: 'white'
-  };
-
-  const reasonTagStyle = {
-    display: 'inline-block',
-    backgroundColor: '#e0f7fa',
-    borderRadius: '20px',
-    padding: '3px 10px',
-    margin: '0 5px 5px 0',
-    fontSize: '12px'
-  };
-
   const badgeStyle = {
     fontSize: "12px",
     padding: "3px 8px",
@@ -316,6 +103,234 @@ function LostFound() {
     color: "white",
   };
 
+  const subtabStyle = {
+    padding: "10px 20px",
+    cursor: "pointer",
+    margin: "0 10px",
+    borderRadius: "5px",
+    fontWeight: "bold",
+    border: "1px solid #ddd",
+    backgroundColor: "#f8f9fa"
+  };
+
+  const activeSubtabStyle = {
+    ...subtabStyle,
+    backgroundColor: "#e9ecef",
+    borderColor: "#dee2e6",
+    boxShadow: "inset 0 3px 5px rgba(0, 0, 0, 0.125)"
+  };
+
+  useEffect(() => {
+    // Only proceed if user is logged in
+    if (!currentUser) {
+      setLoading(false);
+      return;
+    }
+
+    const entriesRef = ref(database, "entries");
+    
+    onValue(entriesRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        // Convert object to array with proper keys
+        const entriesArray = Object.entries(data).map(([key, value]) => ({
+          ...value,
+          id: key // Ensure each entry has an id
+        }));
+        
+        // Filter entries based on user role
+        let filteredEntries = entriesArray;
+        if (!userIsAdmin) {
+          // Regular users can only see their own entries
+          filteredEntries = entriesArray.filter(entry => 
+            entry.userId === currentUser.uid || entry.email === currentUser.email
+          );
+        }
+        
+        setEntries(filteredEntries);
+        
+        // Run matching for both lost and found items
+        const allLostItems = entriesArray.filter(item => item.type === "Lost");
+        const allFoundItems = entriesArray.filter(item => item.type === "Found");
+        
+        // Get user's lost and found items
+        const userLostItems = entriesArray.filter(
+          item => item.type === "Lost" && 
+          (item.userId === currentUser.uid || item.email === currentUser.email)
+        );
+        
+        const userFoundItems = entriesArray.filter(
+          item => item.type === "Found" && 
+          (item.userId === currentUser.uid || item.email === currentUser.email)
+        );
+        
+        // For admin: match all lost items with all found items
+        // For user: match user's lost items with all found items
+        const lostMatches = userIsAdmin 
+          ? findMatchesBetween(allLostItems, allFoundItems)
+          : findMatchesBetween(userLostItems, allFoundItems);
+          
+        // For admin: same as above (already covered)
+        // For user: match user's found items with all lost items
+        const foundMatches = userIsAdmin 
+          ? [] // Not needed for admin as they see all matches in lostMatches
+          : findMatchesBetween(allLostItems.filter(item => 
+              !(item.userId === currentUser.uid || item.email === currentUser.email)
+            ), 
+            userFoundItems
+          );
+          
+        setLostItemMatches(lostMatches);
+        setFoundItemMatches(foundMatches);
+      }
+      setLoading(false);
+    });
+  }, [currentUser, userIsAdmin]);
+
+  // Find matches between lost and found items
+  const findMatchesBetween = (lostItems, foundItems) => {
+    const matchedResults = [];
+    
+    if (lostItems.length === 0 || foundItems.length === 0) {
+      return matchedResults;
+    }
+    
+    lostItems.forEach(lostItem => {
+      foundItems.forEach(foundItem => {
+        let score = 0;
+        
+        // Check document type match
+        if (lostItem.document === foundItem.document) {
+          score += 3;
+        }
+        
+        // Check name similarity if both have names
+        if (lostItem.name && foundItem.name) {
+          const nameSimilarity = stringSimilarity(lostItem.name, foundItem.name);
+          if (nameSimilarity > 0.3) {
+            score += nameSimilarity * 4;
+          }
+        }
+        
+        // Check location similarity
+        const locationSimilarity = stringSimilarity(
+          lostItem.location || "",
+          foundItem.location || ""
+        );
+        if (locationSimilarity > 0.3) {
+          score += locationSimilarity * 2;
+        }
+        
+        // Only add if score is high enough
+        if (score >= 3) {
+          matchedResults.push({
+            lostItem,
+            foundItem,
+            matchScore: score.toFixed(1),
+            reasons: getMatchReasons(lostItem, foundItem)
+          });
+        }
+      });
+    });
+    
+    // Sort by score (highest first)
+    return matchedResults.sort((a, b) => 
+      parseFloat(b.matchScore) - parseFloat(a.matchScore)
+    );
+  };
+
+  // String similarity function
+  const stringSimilarity = (str1, str2) => {
+    if (!str1 || !str2) return 0;
+    
+    // Convert to lowercase and split into words
+    const words1 = str1.toLowerCase().split(/\s+/);
+    const words2 = str2.toLowerCase().split(/\s+/);
+    
+    const set1 = new Set(words1);
+    const set2 = new Set(words2);
+    
+    // Calculate intersection
+    const intersection = new Set([...set1].filter(word => set2.has(word)));
+    
+    // Calculate Jaccard similarity coefficient
+    return intersection.size / (set1.size + set2.size - intersection.size);
+  };
+
+  // Generate match reasons
+  const getMatchReasons = (lostItem, foundItem) => {
+    const reasons = [];
+    
+    if (lostItem.document === foundItem.document) {
+      reasons.push("Same document type");
+    }
+    
+    if (foundItem.name && lostItem.name) {
+      const nameSimilarity = stringSimilarity(lostItem.name, foundItem.name);
+      if (nameSimilarity > 0.3) {
+        reasons.push("Similar names");
+      }
+    }
+    
+    const locationSimilarity = stringSimilarity(
+      lostItem.location || "", 
+      foundItem.location || ""
+    );
+    if (locationSimilarity > 0.3) {
+      reasons.push("Similar locations");
+    }
+    
+    if (lostItem.dateLost && foundItem.dateFound) {
+      const lostDate = new Date(lostItem.dateLost);
+      const foundDate = new Date(foundItem.dateFound);
+      
+      if (!isNaN(lostDate) && !isNaN(foundDate)) {
+        const diffDays = Math.abs(foundDate - lostDate) / (1000 * 60 * 60 * 24);
+        if (diffDays <= 14) {
+          reasons.push("Dates are close");
+        }
+      }
+    }
+    
+    return reasons;
+  };
+
+  const handleViewDetails = (entry) => {
+    setSelectedEntry(entry);
+  };
+
+  const handleCloseDetails = () => {
+    setSelectedEntry(null);
+  };
+
+  const handleContactPerson = async (match, type) => {
+    try {
+      const item = type === 'finder' ? match.foundItem : match.lostItem;
+      const newMessage = {
+        senderId: currentUser.uid,
+        senderEmail: currentUser.email,
+        senderName: currentUser.displayName || currentUser.email,
+        recipientId: item.userId,
+        recipientEmail: item.email,
+        itemId: item.id,
+        itemType: type === 'finder' ? 'Found' : 'Lost',
+        itemName: item.document,
+        // Only include location if it exists
+        ...(item.location && { itemLocation: item.location }),
+        message: `Hello, I am contacting you regarding the ${type === 'finder' ? 'found' : 'lost'} ${item.document}.`,
+        timestamp: Date.now(),
+        status: 'pending',
+        read: false
+      };
+  
+      await push(ref(database, 'messages'), newMessage);
+      alert('Contact request sent successfully!');
+    } catch (error) {
+      console.error('Error sending contact request:', error);
+      alert('Failed to send contact request. Please try again.');
+    }
+  };
+
   const renderContent = () => {
     if (loading) {
       return (
@@ -328,21 +343,31 @@ function LostFound() {
       );
     }
 
+    // Check if user is logged in
+    if (!currentUser) {
+      return (
+        <div className="text-center p-5">
+          <h3>Please log in to view lost and found items</h3>
+          <p>You need to be logged in to access this feature.</p>
+        </div>
+      );
+    }
+
     switch (activeTab) {
       case "all":
         return (
           <div style={flexContainer}>
             {/* Lost Items (Left Side) */}
             <div style={columnStyle}>
-              <h2 style={{ color: "#d9534f" }}>Lost Items</h2>
+              <h2 style={{ color: "#d9534f" }}>
+                {userIsAdmin ? "All Lost Items" : "My Lost Items"}
+              </h2>
               {entries.filter((entry) => entry.type === "Lost").length > 0 ? (
                 <table style={tableStyle}>
                   <thead>
                     <tr>
                       <th style={{ ...thTdStyle, ...thStyle }}>Document</th>
                       <th style={{ ...thTdStyle, ...thStyle }}>Name</th>
-                      <th style={{ ...thTdStyle, ...thStyle }}>Location</th>
-                      <th style={{ ...thTdStyle, ...thStyle }}>Contact</th>
                       <th style={{ ...thTdStyle, ...thStyle }}>Actions</th>
                     </tr>
                   </thead>
@@ -350,11 +375,9 @@ function LostFound() {
                     {entries
                       .filter((entry) => entry.type === "Lost")
                       .map((entry) => (
-                        <tr key={entry.id}>
-                          <td style={thTdStyle}>{entry.document}</td>
-                          <td style={thTdStyle}>{entry.name}</td>
-                          <td style={thTdStyle}>{entry.location}</td>
-                          <td style={thTdStyle}>{entry.contact}</td>
+                        <tr key={entry.id || Math.random().toString()}>
+                          <td style={thTdStyle}>{entry.document || "N/A"}</td>
+                          <td style={thTdStyle}>{entry.name || "N/A"}</td>
                           <td style={thTdStyle}>
                             <button
                               style={{ background: "#007bff", color: "white", padding: "5px", borderRadius: "5px", border: "none", cursor: "pointer" }}
@@ -374,15 +397,15 @@ function LostFound() {
 
             {/* Found Items (Right Side) */}
             <div style={columnStyle}>
-              <h2 style={{ color: "#5cb85c" }}>Found Items</h2>
+              <h2 style={{ color: "#5cb85c" }}>
+                {userIsAdmin ? "All Found Items" : "My Found Items"}
+              </h2>
               {entries.filter((entry) => entry.type === "Found").length > 0 ? (
                 <table style={tableStyle}>
                   <thead>
                     <tr>
                       <th style={{ ...thTdStyle, ...thStyle }}>Document</th>
                       <th style={{ ...thTdStyle, ...thStyle }}>Name</th>
-                      <th style={{ ...thTdStyle, ...thStyle }}>Location</th>
-                      <th style={{ ...thTdStyle, ...thStyle }}>Contact</th>
                       <th style={{ ...thTdStyle, ...thStyle }}>Actions</th>
                     </tr>
                   </thead>
@@ -390,11 +413,9 @@ function LostFound() {
                     {entries
                       .filter((entry) => entry.type === "Found")
                       .map((entry) => (
-                        <tr key={entry.id}>
-                          <td style={thTdStyle}>{entry.document}</td>
+                        <tr key={entry.id || Math.random().toString()}>
+                          <td style={thTdStyle}>{entry.document || "N/A"}</td>
                           <td style={thTdStyle}>{entry.name || "N/A"}</td>
-                          <td style={thTdStyle}>{entry.location}</td>
-                          <td style={thTdStyle}>{entry.contact}</td>
                           <td style={thTdStyle}>
                             <button
                               style={{ background: "#007bff", color: "white", padding: "5px", borderRadius: "5px", border: "none", cursor: "pointer" }}
@@ -413,19 +434,19 @@ function LostFound() {
             </div>
           </div>
         );
+      
       case "lost":
         return (
           <div style={columnStyle}>
-            <h2 style={{ color: "#d9534f" }}>Lost Items</h2>
+            <h2 style={{ color: "#d9534f" }}>
+              {userIsAdmin ? "All Lost Items" : "My Lost Items"}
+            </h2>
             {entries.filter((entry) => entry.type === "Lost").length > 0 ? (
               <table style={tableStyle}>
                 <thead>
                   <tr>
                     <th style={{ ...thTdStyle, ...thStyle }}>Document</th>
                     <th style={{ ...thTdStyle, ...thStyle }}>Name</th>
-                    <th style={{ ...thTdStyle, ...thStyle }}>Date Lost</th>
-                    <th style={{ ...thTdStyle, ...thStyle }}>Location</th>
-                    <th style={{ ...thTdStyle, ...thStyle }}>Contact</th>
                     <th style={{ ...thTdStyle, ...thStyle }}>Actions</th>
                   </tr>
                 </thead>
@@ -433,12 +454,9 @@ function LostFound() {
                   {entries
                     .filter((entry) => entry.type === "Lost")
                     .map((entry) => (
-                      <tr key={entry.id}>
-                        <td style={thTdStyle}>{entry.document}</td>
-                        <td style={thTdStyle}>{entry.name}</td>
-                        <td style={thTdStyle}>{entry.dateLost}</td>
-                        <td style={thTdStyle}>{entry.location}</td>
-                        <td style={thTdStyle}>{entry.contact}</td>
+                      <tr key={entry.id || Math.random().toString()}>
+                        <td style={thTdStyle}>{entry.document || "N/A"}</td>
+                        <td style={thTdStyle}>{entry.name || "N/A"}</td>
                         <td style={thTdStyle}>
                           <button
                             style={{ background: "#007bff", color: "white", padding: "5px", borderRadius: "5px", border: "none", cursor: "pointer" }}
@@ -456,19 +474,19 @@ function LostFound() {
             )}
           </div>
         );
+      
       case "found":
         return (
           <div style={columnStyle}>
-            <h2 style={{ color: "#5cb85c" }}>Found Items</h2>
+            <h2 style={{ color: "#5cb85c" }}>
+              {userIsAdmin ? "All Found Items" : "My Found Items"}
+            </h2>
             {entries.filter((entry) => entry.type === "Found").length > 0 ? (
               <table style={tableStyle}>
                 <thead>
                   <tr>
                     <th style={{ ...thTdStyle, ...thStyle }}>Document</th>
                     <th style={{ ...thTdStyle, ...thStyle }}>Name</th>
-                    <th style={{ ...thTdStyle, ...thStyle }}>Date Found</th>
-                    <th style={{ ...thTdStyle, ...thStyle }}>Location</th>
-                    <th style={{ ...thTdStyle, ...thStyle }}>Contact</th>
                     <th style={{ ...thTdStyle, ...thStyle }}>Actions</th>
                   </tr>
                 </thead>
@@ -476,12 +494,9 @@ function LostFound() {
                   {entries
                     .filter((entry) => entry.type === "Found")
                     .map((entry) => (
-                      <tr key={entry.id}>
-                        <td style={thTdStyle}>{entry.document}</td>
+                      <tr key={entry.id || Math.random().toString()}>
+                        <td style={thTdStyle}>{entry.document || "N/A"}</td>
                         <td style={thTdStyle}>{entry.name || "N/A"}</td>
-                        <td style={thTdStyle}>{entry.dateFound}</td>
-                        <td style={thTdStyle}>{entry.location}</td>
-                        <td style={thTdStyle}>{entry.contact}</td>
                         <td style={thTdStyle}>
                           <button
                             style={{ background: "#007bff", color: "white", padding: "5px", borderRadius: "5px", border: "none", cursor: "pointer" }}
@@ -499,65 +514,234 @@ function LostFound() {
             )}
           </div>
         );
+      
       case "matches":
-        return matches.length > 0 ? (
-          <div>
-            <h2 className="text-center mb-4">AI-Based Lost & Found Matching</h2>
-            <p className="text-center mb-4">Our system found {matches.length} potential matches based on intelligent analysis.</p>
+        return (
+          <div className="matches-container">
+            <h2 className="text-center mb-4">
+              {userIsAdmin ? "System-Wide Match Analysis" : "AI-Based Matching System"}
+            </h2>
             
-            {matches.map((match, index) => (
-              <div key={index} style={cardStyle}>
-                <div style={matchHeaderStyle}>
-                  <h4>Potential Match #{index + 1}</h4>
-                  <span style={scoreStyle}>Match Score: {match.matchScore}</span>
-                </div>
+            {/* Conditional UI based on user role */}
+            {userIsAdmin ? (
+              // ADMIN VIEW - Show all matches in one unified view
+              <>
+                <p className="text-center mb-4">
+                  There are {lostItemMatches.length} potential matches in the system.
+                </p>
                 
-                <div className="row">
-                  <div className="col-md-6">
-                    <div style={itemCardStyle}>
-                      <h5 className="text-danger">Lost Item</h5>
-                      <p><strong>Document:</strong> {match.lostItem.document}</p>
-                      <p><strong>Name:</strong> {match.lostItem.name}</p>
-                      <p><strong>Location:</strong> {match.lostItem.location}</p>
-                      <p><strong>Date Lost:</strong> {match.lostItem.dateLost}</p>
+                {lostItemMatches.length > 0 ? (
+                  lostItemMatches.map((match, index) => (
+                    <div key={index} className="card mb-4">
+                      <div className="card-header d-flex justify-content-between align-items-center">
+                        <h5 className="mb-0">Potential Match #{index + 1}</h5>
+                        <span className="badge bg-success">Match Score: {match.matchScore}</span>
+                      </div>
+                      <div className="card-body">
+                        <div className="row">
+                          <div className="col-md-6">
+                            <div className="border rounded p-3 bg-light mb-3">
+                              <h5 className="text-danger d-flex justify-content-between">
+                                <span>Lost Item</span>
+                                <small className="text-muted">({match.lostItem.email})</small>
+                              </h5>
+                              <p><strong>Document:</strong> {match.lostItem.document}</p>
+                              <p><strong>Name:</strong> {match.lostItem.name || "N/A"}</p>
+                              <p><strong>Location:</strong> {match.lostItem.location}</p>
+                              <p><strong>Date Lost:</strong> {match.lostItem.dateLost || "N/A"}</p>
+                            </div>
+                          </div>
+                          <div className="col-md-6">
+                            <div className="border rounded p-3 bg-light">
+                              <h5 className="text-success d-flex justify-content-between">
+                                <span>Found Item</span>
+                                <small className="text-muted">({match.foundItem.email})</small>
+                              </h5>
+                              <p><strong>Document:</strong> {match.foundItem.document}</p>
+                              <p><strong>Name:</strong> {match.foundItem.name || "(Not visible/provided)"}</p>
+                              <p><strong>Location:</strong> {match.foundItem.location}</p>
+                              <p><strong>Date Found:</strong> {match.foundItem.dateFound || "N/A"}</p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="mt-3">
+                          <h6>Match Reasons:</h6>
+                          <div>
+                            {match.reasons.map((reason, i) => (
+                              <span key={i} className="badge bg-info text-dark me-2 mb-2">{reason}</span>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        <div className="mt-3 text-center">
+                          <button className="btn btn-primary me-2">
+                            <i className="bi bi-envelope me-1"></i> Notify Both Parties
+                          </button>
+                          <button className="btn btn-outline-secondary">
+                            <i className="bi bi-x-circle me-1"></i> Dismiss Match
+                          </button>
+                        </div>
+                      </div>
                     </div>
+                  ))
+                ) : (
+                  <div className="text-center p-5 bg-light rounded">
+                    <i className="bi bi-search" style={{ fontSize: '3rem', color: '#6c757d' }}></i>
+                    <h4 className="mt-3">No Matches Found in System</h4>
+                    <p>There are currently no potential matches between lost and found items.</p>
                   </div>
-                  
-                  <div className="col-md-6">
-                    <div style={itemCardStyle}>
-                      <h5 className="text-success">Found Item</h5>
-                      <p><strong>Document:</strong> {match.foundItem.document}</p>
-                      <p><strong>Name:</strong> {match.foundItem.name || "(Not visible/provided)"}</p>
-                      <p><strong>Location:</strong> {match.foundItem.location}</p>
-                      <p><strong>Date Found:</strong> {match.foundItem.dateFound}</p>
-                    </div>
+                )}
+              </>
+            ) : (
+              // REGULAR USER VIEW - Show tabs for my lost vs my found
+              <>
+                {/* New sub-tabs for matches */}
+                <div className="d-flex justify-content-center mb-4">
+                  <div 
+                    style={matchesSubTab === "myLost" ? activeSubtabStyle : subtabStyle}
+                    onClick={() => setMatchesSubTab("myLost")}
+                    className="me-3"
+                  >
+                    <i className="bi bi-search"></i> Matches for My Lost Items
+                    <span className="badge bg-danger ms-2">{lostItemMatches.length}</span>
+                  </div>
+                  <div 
+                    style={matchesSubTab === "myFound" ? activeSubtabStyle : subtabStyle}
+                    onClick={() => setMatchesSubTab("myFound")}
+                  >
+                    <i className="bi bi-award"></i> Matches for My Found Items
+                    <span className="badge bg-success ms-2">{foundItemMatches.length}</span>
                   </div>
                 </div>
                 
-                <div className="mt-3">
-                  <h6>Match Reasons:</h6>
-                  <div>
-                    {match.reasons.map((reason, i) => (
-                      <span key={i} style={reasonTagStyle}>{reason}</span>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="mt-3 text-center">
-                  <button className="btn btn-primary me-2">Contact Owner</button>
-                  <button className="btn btn-outline-secondary">Not a Match</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center p-5 bg-light rounded">
-            <i className="bi bi-search" style={{ fontSize: '3rem', color: '#6c757d' }}></i>
-            <h4 className="mt-3">No Potential Matches Found</h4>
-            <p>Our system couldn't find any matches between lost and found items at this time.</p>
-            <p>Please check back later as new items are reported.</p>
+                {matchesSubTab === "myLost" ? (
+                  <>
+                    <p className="text-center mb-4">We found {lostItemMatches.length} potential matches for items you've lost.</p>
+                    
+                    {lostItemMatches.length > 0 ? (
+                      lostItemMatches.map((match, index) => (
+                        <div key={index} className="card mb-4">
+                          <div className="card-header d-flex justify-content-between align-items-center">
+                            <h5 className="mb-0">Potential Match #{index + 1}</h5>
+                            <span className="badge bg-success">Match Score: {match.matchScore}</span>
+                          </div>
+                          <div className="card-body">
+                            <div className="row">
+                              <div className="col-md-6">
+                                <div className="border rounded p-3 bg-light mb-3">
+                                  <h5 className="text-danger">Your Lost Item</h5>
+                                  <p><strong>Document:</strong> {match.lostItem.document}</p>
+                                  <p><strong>Name:</strong> {match.lostItem.name || "N/A"}</p>
+                                  <p><strong>Location:</strong> {match.lostItem.location}</p>
+                                  <p><strong>Date Lost:</strong> {match.lostItem.dateLost || "N/A"}</p>
+                                </div>
+                              </div>
+                              <div className="col-md-6">
+                                <div className="border rounded p-3 bg-light">
+                                  <h5 className="text-success">Someone Found</h5>
+                                  <p><strong>Document:</strong> {match.foundItem.document}</p>
+                                  <p><strong>Name:</strong> {match.foundItem.name || "(Not visible/provided)"}</p>
+                                  <p><strong>Location:</strong> {match.foundItem.location}</p>
+                                  <p><strong>Date Found:</strong> {match.foundItem.dateFound || "N/A"}</p>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="mt-3">
+                              <h6>Match Reasons:</h6>
+                              <div>
+                                {match.reasons.map((reason, i) => (
+                                  <span key={i} className="badge bg-info text-dark me-2 mb-2">{reason}</span>
+                                ))}
+                              </div>
+                            </div>
+                            
+                            <div className="mt-3 text-center">
+                              <button 
+                                className="btn btn-primary"
+                                onClick={() => handleContactPerson(match, 'finder')}
+                              >
+                                <i className="bi bi-chat-dots me-1"></i> Contact Finder
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center p-5 bg-light rounded">
+                        <i className="bi bi-search" style={{ fontSize: '3rem', color: '#6c757d' }}></i>
+                        <h4 className="mt-3">No Matches For Your Lost Items</h4>
+                        <p>We couldn't find any potential matches for your lost items yet.</p>
+                        <p>Check back later as more items are reported.</p>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <p className="text-center mb-4">We found {foundItemMatches.length} potential matches for items you've found.</p>
+                    
+                    {foundItemMatches.length > 0 ? (
+                      foundItemMatches.map((match, index) => (
+                        <div key={index} className="card mb-4">
+                          <div className="card-header d-flex justify-content-between align-items-center">
+                            <h5 className="mb-0">Potential Match #{index + 1}</h5>
+                            <span className="badge bg-success">Match Score: {match.matchScore}</span>
+                          </div>
+                          <div className="card-body">
+                            <div className="row">
+                              <div className="col-md-6">
+                                <div className="border rounded p-3 bg-light mb-3">
+                                  <h5 className="text-danger">Someone Lost</h5>
+                                  <p><strong>Document:</strong> {match.lostItem.document}</p>
+                                  <p><strong>Name:</strong> {match.lostItem.name || "N/A"}</p>
+                                  <p><strong>Location:</strong> {match.lostItem.location}</p>
+                                  <p><strong>Date Lost:</strong> {match.lostItem.dateLost || "N/A"}</p>
+                                </div>
+                              </div>
+                              <div className="col-md-6">
+                                <div className="border rounded p-3 bg-light">
+                                  <h5 className="text-success">Your Found Item</h5>
+                                  <p><strong>Document:</strong> {match.foundItem.document}</p>
+                                  <p><strong>Name:</strong> {match.foundItem.name || "(Not visible/provided)"}</p>
+                                  <p><strong>Location:</strong> {match.foundItem.location}</p>
+                                  <p><strong>Date Found:</strong> {match.foundItem.dateFound || "N/A"}</p>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="mt-3">
+                              <h6>Match Reasons:</h6>
+                              <div>
+                                {match.reasons.map((reason, i) => (
+                                  <span key={i} className="badge bg-info text-dark me-2 mb-2">{reason}</span>
+                                ))}
+                              </div>
+                            </div>
+                            
+                            <div className="mt-3 text-center">
+                              <button className="btn btn-danger">
+                                <i className="bi bi-chat-dots me-1"></i> Contact Owner
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center p-5 bg-light rounded">
+                        <i className="bi bi-award" style={{ fontSize: '3rem', color: '#6c757d' }}></i>
+                        <h4 className="mt-3">No Matches For Your Found Items</h4>
+                        <p>We couldn't find any potential matches for the items you've found yet.</p>
+                        <p>Check back later as more lost items are reported.</p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </>
+            )}
           </div>
         );
+      
       default:
         return <div>Invalid tab selected</div>;
     }
@@ -565,7 +749,9 @@ function LostFound() {
 
   return (
     <div style={containerStyle}>
-      <h1 style={headerStyle}>Lost & Found System</h1>
+      <h1 style={headerStyle}>
+        {userIsAdmin ? "Lost & Found System" : "My Lost & Found Items"}
+      </h1>
 
       {/* Tab Navigation */}
       <div style={tabContainerStyle}>
@@ -603,7 +789,7 @@ function LostFound() {
             backgroundColor: "#339af0",
             color: "white",
           }}>
-            {matches.length}
+            {lostItemMatches.length + foundItemMatches.length}
           </span>
         </div>
       </div>
@@ -626,23 +812,20 @@ function LostFound() {
                 <button type="button" className="btn-close" onClick={handleCloseDetails}></button>
               </div>
               <div className="modal-body">
-                <p><strong>Document Type:</strong> {selectedEntry.document}</p>
+                <p><strong>Document Type:</strong> {selectedEntry.document || "N/A"}</p>
                 <p><strong>Name:</strong> {selectedEntry.name || "Not provided/visible"}</p>
-                <p><strong>Location:</strong> {selectedEntry.location}</p>
-                <p><strong>Date:</strong> {selectedEntry.type === "Lost" ? selectedEntry.dateLost : selectedEntry.dateFound}</p>
-                <p><strong>Contact:</strong> {selectedEntry.contact}</p>
-                <p><strong>Email:</strong> {selectedEntry.email}</p>
+                <p><strong>Location:</strong> {selectedEntry.location || "N/A"}</p>
+                <p><strong>Date:</strong> {selectedEntry.type === "Lost" ? 
+                  (selectedEntry.dateLost || "N/A") : 
+                  (selectedEntry.dateFound || "N/A")}
+                </p>
+                <p><strong>Contact:</strong> {selectedEntry.contact || "N/A"}</p>
+                <p><strong>Email:</strong> {selectedEntry.email || "N/A"}</p>
                 {selectedEntry.type === "Lost" && selectedEntry.additionalDetails && (
                   <p><strong>Additional Details:</strong> {selectedEntry.additionalDetails}</p>
                 )}
                 {selectedEntry.type === "Found" && selectedEntry.description && (
                   <p><strong>Description:</strong> {selectedEntry.description}</p>
-                )}
-                {selectedEntry.type === "Found" && selectedEntry.currentLocation && (
-                  <p><strong>Current Location:</strong> {selectedEntry.currentLocation}</p>
-                )}
-                {selectedEntry.lat && selectedEntry.lon && (
-                  <p><strong>GPS Coordinates:</strong> {selectedEntry.lat.toFixed(6)}, {selectedEntry.lon.toFixed(6)}</p>
                 )}
               </div>
               <div className="modal-footer">

@@ -1,0 +1,233 @@
+/* AdminDashboard.css */
+/* Base Styles */
+.admin-dashboard {
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+.admin-loading-container,
+.admin-unauthorized {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+  text-align: center;
+  padding: 2rem;
+}
+
+/* Top Navigation */
+.admin-top-navbar {
+  background: linear-gradient(to right, #007bff, #0056b3);
+  color: white;
+  padding: 1rem 0;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.admin-user-info {
+  display: flex;
+  flex-direction: column;
+  text-align: right;
+  margin-right: 1rem;
+}
+
+.admin-welcome {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.admin-email {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+/* Sidebar */
+.admin-sidebar {
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+  margin-bottom: 1.5rem;
+}
+
+.admin-nav .list-group-item {
+  border: none;
+  border-radius: 0;
+  padding: 0.75rem 1.25rem;
+  transition: all 0.2s;
+}
+
+.admin-nav .list-group-item:first-child {
+  border-top-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
+}
+
+.admin-nav .list-group-item:last-child {
+  border-bottom-left-radius: 0.5rem;
+  border-bottom-right-radius: 0.5rem;
+}
+
+.admin-nav .list-group-item.active {
+  background-color: #007bff;
+  color: white;
+}
+
+.admin-nav .list-group-item:hover:not(.active) {
+  background-color: #f8f9fa;
+  color: #007bff;
+}
+
+.admin-nav .icon {
+  margin-right: 0.5rem;
+  vertical-align: middle;
+}
+
+/* Content Container */
+.admin-content-container {
+  padding: 1.5rem 0;
+}
+
+/* Card Styles */
+.card {
+  border: none;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+  margin-bottom: 1.5rem;
+}
+
+.card-header {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e3e6f0;
+  padding: 0.75rem 1.25rem;
+}
+
+/* Stat Cards */
+.admin-stat-card {
+  border-left: 0.25rem solid #dddfeb;
+  border-radius: 0.5rem;
+}
+
+.admin-stat-card.border-left-primary {
+  border-left-color: #007bff;
+}
+
+.admin-stat-card.border-left-success {
+  border-left-color: #28a745;
+}
+
+.admin-stat-card.border-left-info {
+  border-left-color: #17a2b8;
+}
+
+.admin-stat-card.border-left-danger {
+  border-left-color: #dc3545;
+}
+
+.stat-label {
+  color: #5a5c69;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.stat-value {
+  color: #333;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-top: 0.25rem;
+}
+
+.stat-icon {
+  font-size: 2rem;
+  opacity: 0.3;
+}
+
+/* Tables */
+.admin-table {
+  margin-bottom: 0;
+}
+
+.admin-table thead th {
+  background-color: #f8f9fa;
+  border-top: none;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.03em;
+}
+
+.admin-table tbody tr {
+  transition: all 0.2s;
+}
+
+.admin-table tbody tr:hover {
+  background-color: rgba(0, 123, 255, 0.05);
+}
+
+/* Progress Bars */
+.progress {
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  height: 1rem;
+}
+
+/* Search Box */
+.search-box {
+  width: 250px;
+}
+
+.search-box .input-group-text {
+  background-color: #f8f9fa;
+  border-right: none;
+}
+
+.search-box .form-control {
+  border-left: none;
+}
+
+.search-box .form-control:focus {
+  box-shadow: none;
+}
+
+/* Empty State */
+.empty-state {
+  padding: 2rem;
+  text-align: center;
+}
+
+.empty-icon {
+  color: #dee2e6;
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+/* Modal */
+.modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.show {
+  display: block !important;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 992px) {
+  .admin-sidebar {
+    margin-bottom: 1.5rem;
+  }
+  
+  .search-box {
+    width: 100%;
+    margin-top: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .stat-value {
+    font-size: 1.25rem;
+  }
+  
+  .stat-icon {
+    font-size: 1.5rem;
+  }
+}
